@@ -1,0 +1,8 @@
+# Preserve archived source bytes and their published checksums, including CRLF.
+references/official/** -text -whitespace
+references/notes/** -text -whitespace
+references/volatility-decision-support.csv -text -whitespace
+
+# Diagram source remains editable; the PNG is its rendered publication asset.
+docs/assets/*.svg text eol=lf
+docs/assets/*.png binary

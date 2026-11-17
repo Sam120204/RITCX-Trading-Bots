@@ -1,0 +1,41 @@
+{
+  "account": "stmt-1",
+  "api_port": 16520,
+  "start_tick": 230,
+  "end_tick": 285,
+  "simulated_pnl": 2144.08,
+  "total_fines": 0.0,
+  "filled_orders": 67,
+  "max_observed_abs_delta": 1791,
+  "max_observed_gross_options": 100.0,
+  "positions_at_completion": {},
+  "fees_from_confirmed_fills": 1080.76,
+  "trades": {
+    "RTM52C": {
+      "buy": 80,
+      "sell": 80,
+      "fees": 320.0
+    },
+    "RTM": {
+      "buy": 12019,
+      "sell": 12019,
+      "fees": 480.76
+    },
+    "RTM52P": {
+      "buy": 40,
+      "sell": 40,
+      "fees": 160.0
+    },
+    "RTM51C": {
+      "buy": 20,
+      "sell": 20,
+      "fees": 80.0
+    },
+    "RTM50C": {
+      "buy": 10,
+      "sell": 10,
+      "fees": 40.0
+    }
+  },
+  "log": "logs/practice-20261117T213225Z.jsonl"
+}

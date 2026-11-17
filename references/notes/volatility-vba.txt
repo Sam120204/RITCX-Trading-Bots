@@ -1,0 +1,153 @@
+MODULE ThisWorkbook.cls
+Attribute VB_Name = "ThisWorkbook"
+Attribute VB_Base = "0{00020819-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+Public Sub Workbook_Open()
+    Sheet2.Range("B2:B310").ClearContents
+    Application.RTD.ThrottleInterval = 1
+    
+End Sub
+
+Private Sub Workbook_BeforeClose(Cancel As Boolean)
+    On Error GoTo Errorhandler
+    
+    StopBlink
+    Sheet2.Range("B2:B310").ClearContents
+    
+Errorhandler:
+    Exit Sub
+
+End Sub
+
+
+
+
+MODULE Sheet1.cls
+Attribute VB_Name = "Sheet1"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True
+
+
+MODULE Module1.bas
+Attribute VB_Name = "Module1"
+Function BS_price(S, K, T, r, vol, IsCall, n)
+'n=0 returns price, n=1 returns d1, n=2 returns d2
+Dim d1, d2 As Double
+
+d1 = (Log(S / K) + (r + vol ^ 2 / 2) * T) / (vol * T ^ (1 / 2))
+d2 = d1 - vol * T ^ (1 / 2)
+
+N_d1 = Application.WorksheetFunction.Norm_S_Dist(d1, True)
+N_d2 = Application.WorksheetFunction.Norm_S_Dist(d2, True)
+N_minusd1 = Application.WorksheetFunction.Norm_S_Dist(-d1, True)
+N_minusd2 = Application.WorksheetFunction.Norm_S_Dist(-d2, True)
+
+
+If IsCall = 1 Then 'if iscall = 1 it's a call option
+    BS_price = S * N_d1 - K * N_d2 * Exp(-r * T)
+
+Else 'it's a put
+    BS_price = K * N_minusd2 * Exp(-r * T) - S * N_minusd1
+    
+End If
+
+
+End Function
+
+
+Function impliedvol(S, K, T, r, price As Double, IsCall As Integer)
+
+Const PI = 3.14159265358979
+Dim vol As Double 'testing volatility
+Dim i As Integer
+vol = 0.22 'start value for the volatility
+test_price = BS_price(S, K, T, r, vol, IsCall, 0) 'BS price using the testing vol
+vega = S * T ^ (1 / 2) * Application.WorksheetFunction.Norm_S_Dist(d1, True) ' vega of the option
+i = 0
+
+Do
+vol = vol + (price - test_price) / vega
+    If vol < 0.00001 Then
+    vol = 0.00001
+    End If
+d1 = BS_price(S, K, T, r, vol, IsCall, 1) 'd1 from BS
+vega = S * T ^ (1 / 2) * Application.WorksheetFunction.Norm_S_Dist(d1, True)
+test_price = BS_price(S, K, T, r, vol, IsCall, 0) 'BS price using the testing vol
+
+diff = Abs(price - test_price)
+i = i + 1
+Loop Until diff < Abs(0.000001) Or i > 200 Or vol = 0.00001
+
+impliedvol = vol
+
+End Function
+
+
+MODULE Module2.bas
+Attribute VB_Name = "Module2"
+Public RunWhen As Double
+
+Public Sub StartBlink()
+Dim ticktoupdate As Double
+
+On Error GoTo Errorhandler
+
+    If Sheet2.Range("chart_reset") = Sheet2.Range("chart_check") And Sheet2.Range("Beginning_of_case") = 1 Then
+    Sheet2.Range("chartdata").ClearContents
+    End If
+        
+        If IsError(Sheet2.Range("currenttick").value) = True Then
+        Else
+        ticktoupdate = Sheet2.Range("currenttick").value
+            If ticktoupdate = 0 Then
+            
+            ElseIf ticktoupdate > 0 Then
+                Sheet2.Cells(ticktoupdate + 1, 2).value = Sheet1.Range("Portfolio_Delta")
+            Else
+            End If
+        End If
+    RunWhen = Now + TimeValue("00:00:01")
+    Application.OnTime RunWhen, "StartBlink", , True
+Errorhandler:
+Exit Sub
+        
+End Sub
+
+Sub delete()
+Sheet2.Range("B2:B550").ClearContents
+Call StartBlink
+End Sub
+
+Sub StopBlink()
+    RunWhen = Now + TimeValue("00:00:01")
+    Application.OnTime RunWhen, "StartBlink", , False
+End Sub
+
+
+'Function updatetick(timeofupdate)
+'    If timeofupdate = Sheet2.Range("currenttick") Then
+'        updatetick = Range("currentvar")
+'    End If
+'End Function
+
+
+
+MODULE Sheet2.cls
+Attribute VB_Name = "Sheet2"
+Attribute VB_Base = "0{00020820-0000-0000-C000-000000000046}"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = False
+Attribute VB_Customizable = True

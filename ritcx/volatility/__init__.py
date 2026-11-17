@@ -1,0 +1,1 @@
+"""RITCx simulator trading algorithms."""

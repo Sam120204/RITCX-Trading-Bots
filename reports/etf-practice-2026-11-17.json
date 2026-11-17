@@ -1,0 +1,19 @@
+{
+  "account": "stmt-1",
+  "api_port": 16520,
+  "case": "RITCx - Algorithmic ETF Arbitrage Case",
+  "start_tick": 49,
+  "end_tick": 275,
+  "simulated_pnl_cad": 89.352,
+  "total_fines": 0.0,
+  "filled_orders": 10,
+  "tenders_accepted": 0,
+  "equity_position_at_completion": {},
+  "usd_position_at_completion": 0,
+  "median_order_response_ms": 43.370000000000005,
+  "median_snapshot_ms": 202.35,
+  "log": "logs/etf-20261117T214657Z-watpcg04.jsonl",
+  "simulated_pnl_cad_at_bot_exit": 89.3430648,
+  "final_settled_pnl_cad": 89.352,
+  "final_account_status": "STOPPED, tick 0; no positions and no open orders"
+}

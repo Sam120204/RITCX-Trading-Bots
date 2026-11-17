@@ -1,0 +1,56 @@
+[
+  {
+    "path": "official/etf-arbitrage-case.pdf",
+    "source": "https://rotmanfrtl.github.io/RITCx-Algorithmic%20ETF%20Arb%20Case.pdf",
+    "sha256": "5107a072f0736c89868305f33683ac372ff41863017ecca2a4ded2ce5a485677",
+    "bytes": 195598,
+    "matches_download_2026_11_17": true
+  },
+  {
+    "path": "official/etf-base-dma.py",
+    "source": "https://rotmanfrtl.github.io/RITCx%20ETF%20Arbitrage%20Case%20base%20script-DMA%20API.py",
+    "sha256": "e6f88e2351d796e6787bee8172f0dec98141ead68aeadbfb8c63dcc0ae40629b",
+    "bytes": 10293,
+    "matches_download_2026_11_17": true
+  },
+  {
+    "path": "official/etf-base-rest.py",
+    "source": "https://rotmanfrtl.github.io/RITCx%20ETF%20Arbitrage%20Case%20base%20script-REST%20API.py",
+    "sha256": "15ead58fc563060c5a58b807cc4b9e74a7b126845d1c405334afde5112b8e6b5",
+    "bytes": 6709,
+    "matches_download_2026_11_17": true
+  },
+  {
+    "path": "official/volatility-base-dma.py",
+    "source": "https://rotmanfrtl.github.io/RITCx%20Volatility%20Trading%20Case%20base%20script-DMA%20API.py",
+    "sha256": "e6c8fd7510a9273f42104177e2204a72b88bbb00f856b5794b45161bc5cf85b6",
+    "bytes": 10358,
+    "matches_download_2026_11_17": true
+  },
+  {
+    "path": "official/volatility-base-rest.py",
+    "source": "https://rotmanfrtl.github.io/RITCx%20Volatility%20Trading%20Case%20base%20script-REST%20API.py",
+    "sha256": "493ae23c6a13c21151f244fa2720a3f7a2a168d0196686713167b784d79216d2",
+    "bytes": 7512,
+    "matches_download_2026_11_17": true
+  },
+  {
+    "path": "official/volatility-case.pdf",
+    "source": "https://rotmanfrtl.github.io/RITCx-Volatility%20Trading%20Case.pdf",
+    "sha256": "50889d751976da1a4f4c2b3335bdfb560d7597da8623085d0ee292211918f8df",
+    "bytes": 229810,
+    "matches_download_2026_11_17": true
+  },
+  {
+    "path": "official/volatility-decision-support.xlsm",
+    "source": "https://rotmanfrtl.github.io/RITCx%20Volatility%20Trading%20Case%20-%20Decision%20Support.xlsm",
+    "sha256": "7b2961bc784749e0ae98da34fbf7fc365b841469d800966a47e2b3670b1d58b9",
+    "bytes": 69729
+  },
+  {
+    "path": "volatility-decision-support.csv",
+    "source": "User-supplied Decision Support CSV export, 2026-11-17",
+    "sha256": "ec177e75cb69bc8655e6dbc95f6ca08f1c72482fd0938e86002d97fc1f0b7d31",
+    "bytes": 2100
+  }
+]

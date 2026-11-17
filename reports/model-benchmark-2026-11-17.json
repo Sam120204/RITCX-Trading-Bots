@@ -1,0 +1,9 @@
+{
+  "iterations": 1000,
+  "python": "3.12.0",
+  "platform": "macOS-26.5.2-arm64-arm-64bit",
+  "workload": "ten-option scenario valuation, quoted-IV hedge and one proposed risk check; no network",
+  "median_ms": 1.6121254884637892,
+  "p95_ms": 2.0740419859066606,
+  "source_sha256": "25a120dcbb24d95531e95edd896f1234be1d97f976ccb5f517513de71426ba16"
+}
