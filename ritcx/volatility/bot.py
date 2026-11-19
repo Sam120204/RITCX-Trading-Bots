@@ -6,6 +6,7 @@ import math
 import signal
 import time
 from contextlib import nullcontext
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -29,9 +30,67 @@ from .model import (
 )
 
 
-def hedge(client, securities, curve, tick, force=False):
+@dataclass(frozen=True)
+class StrategyPolicy:
+    """Policy settings; CLI callers explicitly select the configured preset."""
+
+    minimum_edge: float = 0.025
+    hedge_band: int = 500
+    entry_size: int = 10
+    option_cap: int = 100
+    algorithm: str = "term_variance"
+    net_cap: int = 100
+    stock_cap: int = 10000
+    stop_loss: int = 1500
+    idle_seconds: float = 0.6
+    entry_risk_fraction: float = 1.0
+
+
+DEFAULT_POLICY = StrategyPolicy()
+ADAPTIVE_POLICY = StrategyPolicy(
+    minimum_edge=0.04,
+    hedge_band=1200,
+    entry_size=100,
+    option_cap=1000,
+    algorithm="maker_convergence",
+    net_cap=800,
+    stock_cap=45000,
+    stop_loss=6000,
+    idle_seconds=0.1,
+)
+LIVE_POLICIES = {
+    "baseline": DEFAULT_POLICY,
+    "adaptive_small": replace(
+        ADAPTIVE_POLICY, entry_size=10, option_cap=100, net_cap=100, stock_cap=10000, stop_loss=1500
+    ),
+    "adaptive": ADAPTIVE_POLICY,
+    "scaled_small": replace(
+        ADAPTIVE_POLICY,
+        algorithm="forecast_adaptive",
+        entry_size=10,
+        option_cap=100,
+        net_cap=100,
+        stock_cap=10000,
+        stop_loss=1500,
+    ),
+    "scaled": replace(ADAPTIVE_POLICY, algorithm="forecast_adaptive"),
+    "buffered": replace(ADAPTIVE_POLICY, algorithm="forecast_adaptive", entry_risk_fraction=0.75),
+    "buffered_small": replace(
+        ADAPTIVE_POLICY,
+        algorithm="forecast_adaptive",
+        entry_risk_fraction=0.75,
+        entry_size=10,
+        option_cap=100,
+        net_cap=100,
+        stock_cap=10000,
+        stop_loss=1500,
+    ),
+}
+
+
+def hedge(client, securities, curve, tick, force=False, policy=DEFAULT_POLICY):
     quantity = hedge_quantity(securities, tick, curve.current, curve.rate)
-    if abs(quantity) >= (1 if force else 500):
+    if abs(quantity) >= (1 if force else policy.hedge_band):
         # A confirmed fill may take several ticks. Recompute the risk-reducing
         # hedge from fresh inventory/quotes; never merely bypass quote freshness.
         case = client.check_heat(require_fresh=False)
@@ -40,15 +99,20 @@ def hedge(client, securities, curve, tick, force=False):
         quantity = hedge_quantity(securities, case["tick"], curve.current, curve.rate)
         stock = next(x for x in securities if x["ticker"] == "RTM")
         target = stock["position"] + quantity
-        if abs(target) > 10000:
-            raise TradingError("Required ETF hedge exceeds conservative share cap")
+        if abs(target) > policy.stock_cap:
+            if policy.algorithm == "term_variance":
+                raise TradingError("Required ETF hedge exceeds conservative share cap")
+            # A price move may exhaust stock capacity. Hedge as far as permitted;
+            # the adaptive decision then reduces options instead of abandoning them.
+            target = max(-policy.stock_cap, min(policy.stock_cap, target))
+            quantity = target - stock["position"]
         securities = submit_change(client, securities, "RTM", quantity)
     return securities
 
 
-def _trade_once(client, securities, curve, tick, flatten=False):
+def _trade_once(client, securities, curve, tick, flatten=False, policy=DEFAULT_POLICY):
     prior_stock = next(s["position"] for s in securities if s["ticker"] == "RTM")
-    securities = hedge(client, securities, curve, tick)
+    securities = hedge(client, securities, curve, tick, policy=policy)
     if prior_stock != next(s["position"] for s in securities if s["ticker"] == "RTM"):
         return "hedged"
     if flatten:
@@ -56,7 +120,7 @@ def _trade_once(client, securities, curve, tick, flatten=False):
         if positions:
             sec = positions[0]
             securities = submit_change(client, securities, sec["ticker"], -sec["position"])
-            hedge(client, securities, curve, tick, force=True)
+            hedge(client, securities, curve, tick, force=True, policy=policy)
             return "flatten_option"
         stock = next(x for x in securities if x["ticker"] == "RTM")
         if stock["position"]:
@@ -72,36 +136,58 @@ def _trade_once(client, securities, curve, tick, flatten=False):
         if sec["type"] == "OPTION" and sec["position"]:
             if should_exit(sec, spot, curve, tick):
                 securities = submit_change(client, securities, sec["ticker"], -sec["position"])
-                hedge(client, securities, curve, tick, force=True)
+                hedge(client, securities, curve, tick, force=True, policy=policy)
                 return "exit_edge"
     for choice in opportunities:
-        change = 10 if choice["action"] == "BUY" else -10
-        if allowed(securities, choice["ticker"], change, tick, curve.current, curve.rate):
+        if choice["edge"] <= policy.minimum_edge:
+            continue
+        change = policy.entry_size if choice["action"] == "BUY" else -policy.entry_size
+        if allowed(
+            securities,
+            choice["ticker"],
+            change,
+            tick,
+            curve.current,
+            curve.rate,
+            gross_cap=policy.option_cap,
+            net_cap=policy.option_cap,
+        ):
             client.audit("signal", tick=tick, **choice)
             securities = submit_change(client, securities, choice["ticker"], change)
-            hedge(client, securities, curve, tick, force=True)
+            hedge(client, securities, curve, tick, force=True, policy=policy)
             return "entry"
     return "hold"
 
 
-def trade_once(client, securities, curve, tick, flatten=False):
+def trade_once(client, securities, curve, tick, flatten=False, policy=DEFAULT_POLICY):
     try:
-        return _trade_once(client, securities, curve, tick, flatten)
+        if policy.algorithm != "term_variance":
+            from .adaptive import trade
+
+            return trade(client, securities, curve, tick, flatten, policy)
+        return _trade_once(client, securities, curve, tick, flatten, policy)
     except PartialFill as exc:
         client.entry_halted = True
-        hedge(client, exc.securities, curve, tick, force=True)
+        hedge(client, exc.securities, curve, tick, force=True, policy=policy)
         client.audit("partial_fill_reconciled", filled=exc.filled)
         return "partial_fill_reconciled"
 
 
-def liquidation_start(securities, observed_cycle_seconds=0):
+def liquidation_start(securities, observed_cycle_seconds=0, policy=DEFAULT_POLICY):
     """Budget all remaining option tickets, a stock/reconciliation cycle, and slack."""
-    tickets = sum(math.ceil(abs(s["position"]) / 10) for s in securities if s["type"] == "OPTION")
+    # Even a 100-contract entry policy closes in <=40-contract legs: closing
+    # one ITM leg of an offsetting book must not create a 10,000-share delta.
+    cap = min(40, policy.entry_size) if policy.algorithm != "term_variance" else 10
+    tickets = sum(math.ceil(abs(s["position"]) / cap) for s in securities if s["type"] == "OPTION")
+    if policy.algorithm != "term_variance":
+        tickets += sum(
+            math.ceil(abs(s["position"]) / 10000) for s in securities if s["ticker"] == "RTM"
+        )
     reserve = max(15, (tickets + 1) * max(3.0, 1.5 * observed_cycle_seconds) + 5)
     return max(0, 300 - reserve)
 
 
-def validate(case, securities, limits):
+def validate(case, securities, limits, policy=DEFAULT_POLICY):
     if (
         case["name"] != "RITCx Volatility Trading Case"
         or case["ticks_per_period"] != 300
@@ -124,7 +210,10 @@ def validate(case, securities, limits):
         if x["bid"] < 0 or x["ask"] < x["bid"]:
             raise TradingError("Invalid quotes")
     byname = {x["name"]: x for x in limits}
-    for name, gross, net in [("Limit-ETF", 10000, 10000), ("Limit-OPT", 100, 100)]:
+    for name, gross, net in [
+        ("Limit-ETF", policy.stock_cap, policy.stock_cap),
+        ("Limit-OPT", policy.option_cap, policy.net_cap),
+    ]:
         if (
             name not in byname
             or byname[name]["gross_limit"] < gross
@@ -156,7 +245,14 @@ def main():
     )
     parser.add_argument("--config", type=Path, default=ROOT / ".env")
     parser.add_argument("--max-seconds", type=float, default=420)
+    parser.add_argument(
+        "--strategy",
+        choices=LIVE_POLICIES,
+        default="buffered",
+        help="Policy (default: buffered); baseline restores the original small position limits",
+    )
     args = parser.parse_args()
+    policy = LIVE_POLICIES[args.strategy]
     cfg = read_config(args.config)
     try:
         validate_profile(cfg, args.practice, args.contest, args.trade)
@@ -188,9 +284,13 @@ def main():
             "run_started",
             execution_enabled=args.trade,
             environment=cfg.get("RIT_ENVIRONMENT", "practice"),
-            strategy_revision="research-v1",
+            strategy_revision=policy.algorithm + "-v2"
+            if policy.algorithm != "term_variance"
+            else "research-v1",
+            strategy=args.strategy,
         )
         client = client_from_config(cfg, execute=args.trade, audit=audit)
+        client.option_ticket_limit = policy.entry_size
         last_tick = None
         first_period = None
         start = time.monotonic()
@@ -216,7 +316,7 @@ def main():
                     client.bind_heat(case)
                 client.bind_snapshot(case)
                 securities = client.get("securities")
-                validate(case, securities, client.get("limits"))
+                validate(case, securities, client.get("limits"), policy)
                 if client.get("orders?status=OPEN"):
                     raise TradingError("Open orders exist; reconcile before running this bot")
                 if last_tick is None and args.trade and any(x["position"] for x in securities):
@@ -243,16 +343,21 @@ def main():
                 if start_pnl is None:
                     start_pnl = trader["nlv"]
                 pnl = trader["nlv"] - start_pnl
-                close_tick = liquidation_start(securities, max(cycle_durations[-20:], default=0))
+                client.observed_cycle_seconds = max(cycle_durations[-20:], default=3)
+                close_tick = liquidation_start(securities, client.observed_cycle_seconds, policy)
                 closing = (
                     closing
                     or getattr(client, "entry_halted", False)
                     or stop
                     or tick >= close_tick
-                    or pnl <= -1500
+                    or pnl <= -policy.stop_loss
                     or time.monotonic() - start >= args.max_seconds
                 )
                 signals = candidates(securities, curve, tick)
+                if policy.algorithm != "term_variance":
+                    from .adaptive import signals as adaptive_signals
+
+                    signals = adaptive_signals(securities, curve, tick, policy)
                 audit(
                     "snapshot",
                     tick=tick,
@@ -276,7 +381,7 @@ def main():
                         or fresh["tick"] - tick > 2
                     ):
                         raise TradingError("Stale snapshot or round changed before order")
-                    action = trade_once(client, securities, curve, tick, closing)
+                    action = trade_once(client, securities, curve, tick, closing, policy)
                     audit("decision", tick=tick, action=action)
                     if closing and action == "flat":
                         audit("finished_flat", trader=client.get("trader"))
@@ -284,7 +389,7 @@ def main():
                 elif not args.watch or stop:
                     break
                 last_tick = tick
-                time.sleep(0.6)
+                time.sleep(policy.idle_seconds)
                 cycle_durations.append(time.monotonic() - cycle_start)
             else:
                 raise TradingError("Time limit exhausted; inspect any remaining positions")

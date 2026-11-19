@@ -91,7 +91,7 @@ def execute_order(client, sec, quantity, action, *, price=None, passive_seconds=
 
 def submit_change(client, securities, ticker, change):
     sec = next(x for x in securities if x["ticker"] == ticker)
-    cap = 10 if sec["type"] == "OPTION" else 10000
+    cap = min(100, getattr(client, "option_ticket_limit", 10)) if sec["type"] == "OPTION" else 10000
     quantity = min(abs(int(change)), cap, int(sec["max_trade_size"]))
     if quantity:
         return client.order(sec, quantity, "BUY" if change > 0 else "SELL")

@@ -1,0 +1,77 @@
+{
+  "created_utc": "2026-11-19T23:07:22.246698+00:00",
+  "official_pdf_sha256": "50889d751976da1a4f4c2b3335bdfb560d7597da8623085d0ee292211918f8df",
+  "practice_preflight": {
+    "read_only": true,
+    "status": "STOPPED",
+    "tick": 0,
+    "positions": {},
+    "open_orders": 0,
+    "policy": "scaled"
+  },
+  "cpu_benchmarks_ms": {
+    "baseline_1000_iterations": {
+      "median": 2.24585,
+      "p95": 2.75658
+    },
+    "scaled_100_flat_start_decisions_including_local_reconciliation": {
+      "median": 16.435687546618283,
+      "p95": 17.312124953605235
+    }
+  },
+  "verification": {
+    "unittest_tests": 118,
+    "unittest_result": "passed",
+    "ruff_check": "passed",
+    "ruff_format": "passed",
+    "compileall": "passed",
+    "independent_review": "no material remaining defects"
+  },
+  "source_sha256": {
+    "ritcx/volatility/model.py": "e5fdd5f38cb5f29b5fb3dc55cf78263baf6c233e9dc50d4e2e141b7d9994ff23",
+    "ritcx/volatility/bot.py": "cd53227b1e6633fb2fc9907dbf36c3f6c4bf1a660ec57de276b7825cb65a4c65",
+    "ritcx/volatility/adaptive.py": "3d307a338e6fe7f34e19674d180f5f7338a361903d85db41a7c241b02ec78e27",
+    "ritcx/api.py": "5a2260bd06964f41b1ba83a8430bf3df50ba520921b8d05966facb92ddf9ee69",
+    "ritcx/execution.py": "552a86e40ded8d906f05561d84211608728f6c58b4985ce952bdc0ade3df0f1e",
+    "ritcx/mock_market.py": "c0ea77d06621b7d9e51ec2052919047b1cd927a8aa9e74a8c6ae5ac5ece1dbac",
+    "ritcx/mock_engine.py": "21c86576b4b8453324532f5d8180a8266c163eac0b67857e1b4df8d920425189"
+  },
+  "monitored_run": {
+    "report": "logs/mock/mock-volatility-20261119T230440Z-157nfacu.json",
+    "seed": 1459556188,
+    "scenario": "case",
+    "policy": "scaled",
+    "pnl": 2910.3645353503653,
+    "fees": 7145.88,
+    "fines": 0.0,
+    "orders": 147,
+    "max_drawdown": 5344.246722533577,
+    "first_trade_tick": 76,
+    "strategy_finished_flat": true,
+    "status": "completed"
+  },
+  "same_case_seed_comparison": {
+    "seed": 1459556188,
+    "scenario": "case",
+    "baseline": {
+      "pnl": 6428.450590977516,
+      "fees": 1565.9599999999998,
+      "orders": 104
+    },
+    "baseline_fast": {
+      "pnl": 5346.238487229393,
+      "fees": 1714.4799999999998,
+      "orders": 112
+    },
+    "scaled_small": {
+      "pnl": 4039.0096577458,
+      "fees": 1234.0400000000002,
+      "orders": 84
+    },
+    "scaled": {
+      "pnl": 2910.3645353503653,
+      "fees": 7145.88,
+      "orders": 147
+    }
+  }
+}

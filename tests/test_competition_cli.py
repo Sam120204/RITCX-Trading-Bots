@@ -17,7 +17,7 @@ from ritcx.volatility.model import black_scholes
 
 
 class CompetitionCLITests(unittest.TestCase):
-    def run_case(self, kind, trade=True):
+    def run_case(self, kind, trade=True, volatility_strategy=None):
         posted, orders = [], []
         news_reads = 0
         if kind == "volatility":
@@ -160,6 +160,8 @@ class CompetitionCLITests(unittest.TestCase):
                     "12",
                 ]
                 command += ["--trade"] if trade else ["--preflight"]
+                if volatility_strategy:
+                    command += ["--volatility-strategy", volatility_strategy]
                 if kind == "etf":
                     command += ["--no-baskets"]
                 result = subprocess.run(
@@ -186,7 +188,20 @@ class CompetitionCLITests(unittest.TestCase):
         _, orders = self.run_case("volatility")
         self.assertEqual(orders[0]["ticker"], "RTM50C")
         self.assertEqual(orders[0]["action"], "SELL")
+        self.assertGreater(orders[0]["quantity"], 10)
         self.assertEqual(orders[1]["ticker"], "RTM")
+        self.assertEqual(
+            sum(
+                o["quantity"] * (1 if o["action"] == "BUY" else -1)
+                for o in orders
+                if o["ticker"] == "RTM50C"
+            ),
+            0,
+        )
+
+    def test_explicit_baseline_retains_original_small_tickets(self):
+        _, orders = self.run_case("volatility", volatility_strategy="baseline")
+        self.assertEqual(orders[0]["quantity"], 10)
         self.assertEqual(len(orders), 4)
 
     def test_etf_accepts_qualified_tender_unwinds_and_converts_net_usd_cash(self):

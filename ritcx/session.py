@@ -46,7 +46,7 @@ class RoundRouter:
         return script
 
 
-def preflight(client):
+def preflight(client, volatility_strategy="buffered"):
     """GET-only checks; inactive/late heats can pass without being entry eligible."""
     case = client.get("case")
     securities = client.get("securities")
@@ -54,7 +54,11 @@ def preflight(client):
     trader = client.get("trader")
     orders = client.get("orders?status=OPEN")
     if case["name"] == "RITCx Volatility Trading Case":
-        from .volatility.bot import validate
+        from .volatility.bot import LIVE_POLICIES
+        from .volatility.bot import validate as validate_volatility
+
+        def validate(case, securities, limits):
+            validate_volatility(case, securities, limits, LIVE_POLICIES[volatility_strategy])
     elif case["name"] == "RITCx - Algorithmic ETF Arbitrage Case":
         from .etf.bot import validate
     else:
@@ -97,6 +101,20 @@ def main():
     )
     parser.add_argument("--config", type=Path, default=ROOT / ".env")
     parser.add_argument(
+        "--volatility-strategy",
+        choices=(
+            "baseline",
+            "adaptive_small",
+            "adaptive",
+            "scaled_small",
+            "scaled",
+            "buffered",
+            "buffered_small",
+        ),
+        default="buffered",
+        help="Volatility policy (default: buffered); baseline restores the original small position limits",
+    )
+    parser.add_argument(
         "--preflight",
         action="store_true",
         help="Check connection, rules and account without sending orders, then exit",
@@ -127,7 +145,7 @@ def main():
     validate_profile(cfg, args.practice, args.contest, args.trade)
     client = client_from_config(cfg)
     if args.preflight:
-        result = preflight(client)
+        result = preflight(client, args.volatility_strategy)
         print("PREFLIGHT PASSED (read-only): " + json.dumps(result), flush=True)
         print(
             "Ready for this active heat."
@@ -231,7 +249,7 @@ def main():
             script = router.claim(case)
             if script:
                 # Validate account and contract parameters before launching every heat.
-                preflight(client)
+                preflight(client, args.volatility_strategy)
                 report("STARTING", script=script, tick=case["tick"])
                 command = child_command(
                     root,
@@ -241,6 +259,8 @@ def main():
                     cfg.get("RIT_ENVIRONMENT", "practice"),
                     lock_fd,
                 )
+                if script == "ritcx.volatility.bot":
+                    command.extend(["--strategy", args.volatility_strategy])
                 if script == "ritcx.etf.bot":
                     if args.passive_tenders:
                         command.append("--passive-tenders")

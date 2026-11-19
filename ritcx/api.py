@@ -45,6 +45,7 @@ class DMAClient:
         self._next_request = 0
         self.order_latencies = []
         self.last_securities = None
+        self.option_ticket_limit = 10
 
     def bind_heat(self, case):
         self.heat = (case["name"], case["period"], case["tick"])
@@ -135,7 +136,7 @@ class DMAClient:
     def order(self, sec, quantity, action):
         from .execution import PartialFill, execute_order
 
-        cap = 10 if sec["type"] == "OPTION" else 10000
+        cap = min(100, self.option_ticket_limit) if sec["type"] == "OPTION" else 10000
         if (
             not self.execute
             or action not in ("BUY", "SELL")

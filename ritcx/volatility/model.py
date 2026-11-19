@@ -60,6 +60,8 @@ class VolatilityCurve:
     def from_news(cls, news, tick):
         rate = None
         weeks = {}
+        confirmed = None
+        confirmed_tick = None
         for item in sorted(news, key=lambda n: (n["tick"], n.get("news_id", 0))):
             t = int(item["tick"])
             if t > tick:
@@ -80,16 +82,25 @@ class VolatilityCurve:
                 raise ValueError("Unrecognized volatility announcement")
             week = (t // 75) * 75
             if "next week" in body:
-                week += 75
+                # Page 3 uses ticks 1..75 for week one. A forecast is never
+                # promoted to a confirmed realized-vol announcement by time alone.
+                week = (max(0, t - 1) // 75 + 1) * 75
+            else:
+                confirmed = (low + high) / 2
+                confirmed_tick = t
             weeks[week] = (low, high)
-        if rate is None or not any(t <= tick for t in weeks):
+        if rate is None or confirmed is None or not any(t <= tick for t in weeks):
             raise ValueError("No usable risk-free rate/current volatility news")
         curve = cls(rate, weeks)
         curve._tick = tick
+        curve._confirmed = confirmed
+        curve.confirmed_tick = confirmed_tick
         return curve
 
     @property
     def current(self):
+        if hasattr(self, "_confirmed"):
+            return self._confirmed
         tick = getattr(self, "_tick", 0)
         low, high = self.weeks[max(k for k in self.weeks if k <= tick)]
         return (low + high) / 2
