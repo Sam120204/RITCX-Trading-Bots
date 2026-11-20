@@ -24,6 +24,7 @@ These figures come from the bots’ reconciled heat logs for November 20, 2026. 
 
 ## Documentation
 
+- [Case debrief slides and explanations](docs/case-debrief.md)
 - [Competition runbook](docs/competition-runbook.md)
 - [ETF practice and replay evaluation](reports/etf-strategy-comparison-2026-11-19.md)
 - [Options strategy evaluation](reports/volatility-buffered-replay/comparison.md)
