@@ -164,28 +164,6 @@ def hedge_quantity(securities, tick, sigma, rate):
     return -round(total)
 
 
-def allowed(
-    securities, ticker, change, tick, sigma, rate, gross_cap=100, net_cap=100, etf_cap=10000
-):
-    proposed = [
-        dict(x, position=x["position"] + (change if x["ticker"] == ticker else 0))
-        for x in securities
-    ]
-    opts = [x for x in proposed if x["type"] == "OPTION"]
-    if (
-        sum(abs(x["position"]) for x in opts) > gross_cap
-        or abs(sum(x["position"] for x in opts)) > net_cap
-    ):
-        return False
-    if abs(next(x["position"] for x in proposed if x["ticker"] == "RTM")) > etf_cap:
-        return False
-    # Check the submitted leg before its hedge as well as different volatility estimates.
-    return abs(hedge_quantity(proposed, tick, sigma, rate)) <= 6000 and all(
-        abs(portfolio_delta(proposed, tick, v, rate)) <= 6000
-        for v in {sigma, 0.01, 0.15, 0.35, 0.65, 1.0}
-    )
-
-
 def candidates(securities, curve, tick):
     stock = next(x for x in securities if x["ticker"] == "RTM")
     spot = (stock["bid"] + stock["ask"]) / 2
@@ -210,16 +188,6 @@ def candidates(securities, curve, tick):
                     )
                 )
     return sorted(result, key=lambda x: x["edge"], reverse=True)
-
-
-def should_exit(sec, spot, curve, tick):
-    """Hold a small residual edge; re-entry needs the larger round-trip threshold."""
-    if not sec["position"]:
-        return False
-    bound = "low" if sec["position"] > 0 else "high"
-    fair, _ = option_values(sec, spot, tick, curve.effective(tick, bound), curve.rate)
-    residual = fair - sec["bid"] if sec["position"] > 0 else sec["ask"] - fair
-    return residual <= sec["trading_fee"] / sec["size"] + 0.01
 
 
 def parity_opportunities(securities, tick, rate):

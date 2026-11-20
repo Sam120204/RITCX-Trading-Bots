@@ -1,4 +1,4 @@
-"""Case semantics and risk checks for the optional maker-convergence strategy."""
+"""Case semantics and risk checks for the buffered volatility strategy."""
 
 import json
 import subprocess
@@ -59,10 +59,9 @@ class TicketTests(unittest.TestCase):
             client.order(sec, 101, "BUY")
 
 
-class AdaptiveTests(unittest.TestCase):
+class BufferedTests(unittest.TestCase):
     def setUp(self):
-        self.assertTrue(hasattr(bot, "ADAPTIVE_POLICY"), "Adaptive policy not implemented")
-        self.policy = bot.ADAPTIVE_POLICY
+        self.policy = bot.DEFAULT_POLICY
 
     def fixture(self, tick=80):
         market = MockMarket(7)
@@ -84,14 +83,14 @@ class AdaptiveTests(unittest.TestCase):
         self.assertLessEqual(abs(market.snapshot()["delta"]), 1500)
 
     def test_buffered_entries_leave_headroom_without_forcing_an_existing_close(self):
-        from ritcx.volatility.adaptive import admissible_quantity
+        from ritcx.volatility.buffered import admissible_quantity
 
         self.assertIn("buffered", bot.LIVE_POLICIES)
         market, _, curve = self.fixture(180)
         for s in market.securities:
             s["position"] = {"RTM50C": 40, "RTM50P": 40, "RTM": -700}.get(s["ticker"], 0)
         buffered = bot.LIVE_POLICIES["buffered"]
-        original = bot.LIVE_POLICIES["scaled"]
+        original = replace(buffered, entry_risk_fraction=1.0)
         old_size = admissible_quantity(market.securities, "RTM50C", 100, curve, 180, original)
         new_size = admissible_quantity(market.securities, "RTM50C", 100, curve, 180, buffered)
         self.assertGreater(old_size, 0)
@@ -176,8 +175,8 @@ class AdaptiveTests(unittest.TestCase):
         self.assertEqual(result, "entry")
         self.assertGreater(sum(s["position"] for s in market.securities[1:]), 10)
 
-    def test_forecast_variant_can_trade_information_before_current_sigma_changes(self):
-        self.assertIn("scaled", bot.LIVE_POLICIES)
+    def test_forecast_trades_information_before_current_sigma_changes(self):
+        self.assertIn("buffered", bot.LIVE_POLICIES)
         market, client, _ = self.fixture(40)
         curve = VolatilityCurve.from_news(
             [
@@ -187,13 +186,13 @@ class AdaptiveTests(unittest.TestCase):
             40,
         )
         action = bot.trade_once(
-            client, client.get("securities"), curve, 40, policy=bot.LIVE_POLICIES["scaled"]
+            client, client.get("securities"), curve, 40, policy=bot.DEFAULT_POLICY
         )
         self.assertEqual(action, "entry")
         self.assertGreater(sum(s["position"] for s in market.securities[1:]), 10)
 
     def test_gamma_and_required_stock_capacity_constrain_entries(self):
-        from ritcx.volatility.adaptive import admissible_quantity
+        from ritcx.volatility.buffered import admissible_quantity
 
         market, _, curve = self.fixture(290)
         sec = deepcopy(market.securities)
@@ -226,16 +225,6 @@ class AdaptiveTests(unittest.TestCase):
                 break
         self.assertEqual(action, "flat")
         self.assertFalse(market.snapshot()["positions"])
-
-    def test_equal_size_variant_uses_same_strategy_with_baseline_position_cap(self):
-        market, client, curve = self.fixture()
-        policy = replace(
-            self.policy, entry_size=10, option_cap=100, net_cap=100, stock_cap=10000, stop_loss=1500
-        )
-        client.option_ticket_limit = 10
-        for _ in range(30):
-            bot.trade_once(client, client.get("securities"), curve, 80, policy=policy)
-        self.assertLessEqual(sum(abs(s["position"]) for s in market.securities[1:]), 100)
 
 
 class PublishedCaseTests(unittest.TestCase):
@@ -271,7 +260,7 @@ class PublishedCaseTests(unittest.TestCase):
         self.assertEqual(a.snapshot(), b.snapshot())
         self.assertAlmostEqual(a.quoted_sigma, 0.2)
 
-    def test_paired_evaluation_accepts_new_policies_and_fresh_seed_sets(self):
+    def test_evaluation_uses_buffered_and_fresh_seed_sets(self):
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp) / "result.json"
             run = subprocess.run(
@@ -284,9 +273,7 @@ class PublishedCaseTests(unittest.TestCase):
                     "--scenarios",
                     "case",
                     "--policies",
-                    "baseline",
-                    "adaptive_small",
-                    "adaptive",
+                    "buffered",
                     "--exploratory-start",
                     "20000",
                     "--held-out-start",
@@ -300,7 +287,7 @@ class PublishedCaseTests(unittest.TestCase):
             )
             self.assertEqual(run.returncode, 0, run.stderr)
             data = json.loads(output.read_text())
-            self.assertEqual(data["heat_count"], 6)
+            self.assertEqual(data["heat_count"], 2)
             self.assertEqual({r["seed"] for g in data["groups"] for r in g["runs"]}, {20000, 30000})
             self.assertTrue(
                 all(
@@ -309,18 +296,6 @@ class PublishedCaseTests(unittest.TestCase):
                     for r in g["runs"]
                 )
             )
-
-    def test_bot_cli_exposes_explicit_strategy_selection(self):
-        for module, flag in (
-            ("ritcx.volatility.bot", "--strategy"),
-            ("ritcx", "--volatility-strategy"),
-        ):
-            run = subprocess.run(
-                [sys.executable, "-m", module, "--help"], capture_output=True, text=True
-            )
-            self.assertEqual(run.returncode, 0)
-            self.assertIn(flag, run.stdout)
-            self.assertIn("adaptive", run.stdout)
 
 
 if __name__ == "__main__":

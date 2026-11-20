@@ -1,5 +1,7 @@
 # Follow-up: reduce trading around the risk limit
 
+> Historical report. Buffered is now the only supported volatility strategy; commands or alternatives described below refer to earlier revisions. Use the current README for runnable instructions.
+
 **Deployment selection:** after this evaluation, the user selected `buffered` as
 the default. The launcher and standalone volatility bot now select it automatically;
 the local dashboard defaults to `case` plus `buffered`. The historical baseline

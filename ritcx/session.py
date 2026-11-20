@@ -102,17 +102,9 @@ def main():
     parser.add_argument("--config", type=Path, default=ROOT / ".env")
     parser.add_argument(
         "--volatility-strategy",
-        choices=(
-            "baseline",
-            "adaptive_small",
-            "adaptive",
-            "scaled_small",
-            "scaled",
-            "buffered",
-            "buffered_small",
-        ),
+        choices=("buffered",),
         default="buffered",
-        help="Volatility policy (default: buffered); baseline restores the original small position limits",
+        help="Only supported volatility policy (default: buffered)",
     )
     parser.add_argument(
         "--preflight",

@@ -1,12 +1,14 @@
-"""Compare policies on paired synthetic markets; preserve failures and held-out seeds."""
+"""Evaluate buffered on synthetic markets; preserve failures and held-out seeds."""
 
 import argparse
 import hashlib
 import json
 import math
 import statistics
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict
 from datetime import datetime, timezone
+from itertools import repeat
 from pathlib import Path
 
 from .mock_engine import POLICIES, run_heat
@@ -38,7 +40,7 @@ def main():
         "--seeds",
         type=int,
         default=20,
-        help="Seeds per scenario per split (default 20; total heats = seeds x 16)",
+        help="Seeds per scenario per split (default 20; total heats = seeds x scenarios x 2)",
     )
     parser.add_argument(
         "--output", type=Path, default=ROOT / "reports" / "mock-stress-evaluation.json"
@@ -48,11 +50,16 @@ def main():
         "--policies",
         choices=POLICIES,
         nargs="+",
-        default=["baseline", "strict_edge", "wide_hedge", "half_size"],
+        default=["buffered"],
+    )
+    parser.add_argument(
+        "--workers", type=int, default=1, help="Local evaluation worker processes (1-8)"
     )
     parser.add_argument("--exploratory-start", type=int, default=0)
     parser.add_argument("--held-out-start", type=int, default=10000)
     args = parser.parse_args()
+    if not 1 <= args.workers <= 8:
+        parser.error("--workers must be between 1 and 8")
     if not 1 <= args.seeds <= 10000:
         parser.error("--seeds must be between 1 and 10000 (keeps seed sets disjoint)")
     if abs(args.exploratory_start - args.held_out_start) < args.seeds:
@@ -77,7 +84,7 @@ def main():
                     "mock_evaluate.py",
                     "volatility/bot.py",
                     "volatility/model.py",
-                    "volatility/adaptive.py",
+                    "volatility/buffered.py",
                     "api.py",
                     "execution.py",
                 )
@@ -95,9 +102,12 @@ def main():
         for scenario in args.scenarios:
             baseline = None
             for policy in args.policies:
-                rows = [
-                    run_heat(seed, scenario, policy) for seed in range(start, start + args.seeds)
-                ]
+                seeds = range(start, start + args.seeds)
+                if args.workers == 1:
+                    rows = [run_heat(seed, scenario, policy) for seed in seeds]
+                else:
+                    with ProcessPoolExecutor(max_workers=args.workers) as pool:
+                        rows = list(pool.map(run_heat, seeds, repeat(scenario), repeat(policy)))
                 if baseline is None:
                     baseline = rows
                 summary = summarize(rows)

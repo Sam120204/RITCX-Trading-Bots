@@ -17,13 +17,10 @@ from ritcx.volatility.model import black_scholes
 
 
 class VolatilityClockTests(unittest.TestCase):
-    def test_full_inventory_is_liquidated_with_100ms_per_request(self):
-        self.run_clock("baseline")
-
     def test_default_buffered_inventory_closes_before_deadline(self):
         self.run_clock()
 
-    def run_clock(self, strategy=None):
+    def run_clock(self):
         now = 200.0
         sec = [stock()] + [option(f"RTM{k}{cp}") for k in range(48, 53) for cp in "CP"]
         max_contracts = 0
@@ -72,7 +69,12 @@ class VolatilityClockTests(unittest.TestCase):
                     s["ask"] = s["bid"] + 0.02
                 result = sec
             elif ep == "news":
-                result = [dict(tick=1, body="Risk free rate is 0%. Realized volatility is 20%.")]
+                result = [
+                    dict(
+                        tick=1,
+                        body="Risk free rate is 0%. Realized volatility is 20%.",
+                    )
+                ]
             elif ep == "limits":
                 result = [
                     dict(name="Limit-ETF", gross_limit=50000, net_limit=50000),
@@ -95,8 +97,7 @@ class VolatilityClockTests(unittest.TestCase):
                 patch.object(
                     sys,
                     "argv",
-                    ["volatility", "--config", str(cfg), "--contest", "--trade", "--watch"]
-                    + (["--strategy", strategy] if strategy else []),
+                    ["volatility", "--config", str(cfg), "--contest", "--trade", "--watch"],
                 ),
                 patch("ritcx.api.urlopen", side_effect=transport),
                 patch("time.monotonic", side_effect=lambda: now),
@@ -105,11 +106,8 @@ class VolatilityClockTests(unittest.TestCase):
                 contextlib.redirect_stdout(io.StringIO()) as output,
             ):
                 result = main()
-        if strategy == "baseline":
-            self.assertEqual(max_contracts, 100)
-        else:
-            self.assertGreater(max_contracts, 100)
-            self.assertLessEqual(max_contracts, 1000)
+        self.assertGreater(max_contracts, 100)
+        self.assertLessEqual(max_contracts, 1000)
         self.assertEqual(result, 0, "\n".join(output.getvalue().splitlines()[-6:]))
         self.assertLess(now, 300)
         self.assertTrue(all(s["position"] == 0 for s in sec))

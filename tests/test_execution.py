@@ -10,7 +10,7 @@ from test_strategy import option, stock
 from ritcx.api import DMAClient
 from ritcx.execution import confirm_flat
 from ritcx.runtime import TradingError
-from ritcx.volatility.bot import trade_once
+from ritcx.volatility.bot import DEFAULT_POLICY, trade_once
 
 
 class ExecutionTests(unittest.TestCase):
@@ -84,6 +84,8 @@ class ExecutionTests(unittest.TestCase):
     def client(self, execute=False, password="secret"):
         client = DMAClient(self.url, "test", password, execute=execute, audit=lambda *a, **k: None)
         client.bind_heat(self.case)
+        client.bind_snapshot(self.case)
+        client.option_ticket_limit = DEFAULT_POLICY.entry_size
         return client
 
     def test_dry_run_cannot_send_orders(self):
@@ -115,8 +117,8 @@ class ExecutionTests(unittest.TestCase):
 
         client = self.client(True)
         result = trade_once(client, self.securities, VolatilityCurve(0, {0: (0.2, 0.2)}), 20, False)
-        self.assertEqual(self.securities[1]["position"], -10)
-        self.assertEqual(self.securities[0]["position"], 520)
+        self.assertLess(self.securities[1]["position"], -10)
+        self.assertGreater(self.securities[0]["position"], 520)
         self.assertEqual([x["ticker"][0] for x in self.posts], ["RTM50C", "RTM"])
         self.assertEqual(result, "entry")
 
@@ -127,21 +129,21 @@ class ExecutionTests(unittest.TestCase):
         client = self.client(True)
         client.bind_snapshot(self.case)
         trade_once(client, self.securities, VolatilityCurve(0, {0: (0.2, 0.2)}), 20)
-        self.assertEqual(self.securities[1]["position"], -10)
+        self.assertLess(self.securities[1]["position"], -10)
         self.assertGreater(self.securities[0]["position"], 0)
         self.assertEqual([p["ticker"][0] for p in self.posts], ["RTM50C", "RTM"])
 
     def test_delayed_stock_hedge_defers_option_close_during_liquidation(self):
         from ritcx.volatility.model import VolatilityCurve
 
-        self.securities[1]["position"] = -10
+        self.securities[1]["position"] = -30
         self.advance_after_stock = 3
         client = self.client(True)
         client.bind_snapshot(self.case)
         result = trade_once(client, self.securities, VolatilityCurve(0, {0: (0.2, 0.2)}), 20, True)
         self.assertEqual(result, "hedged")
         self.assertEqual([p["ticker"][0] for p in self.posts], ["RTM"])
-        self.assertEqual(self.securities[1]["position"], -10)
+        self.assertEqual(self.securities[1]["position"], -30)
         client.bind_snapshot(self.case)
         trade_once(
             client, self.securities, VolatilityCurve(0, {0: (0.2, 0.2)}), self.case["tick"], True

@@ -1,0 +1,2334 @@
+{
+  "source": "reports/volatility-judge-rerun-2026-11-19.json",
+  "source_sha256": "57b32411ead5d642e14d487f66a14146f6bd9b73419e6a3cd5bc5794c5cebf8c",
+  "scope": "Volatility case only; synthetic main-case model; fixed production policies; no real competitors",
+  "ranking": "Heat rank = 1 + count of methods with strictly higher net P&L; case rank = 1 + count with strictly lower average heat rank; points = N - case_rank + 1, N=2. No ETF weighting.",
+  "all_fresh": {
+    "summary": {
+      "buffered": {
+        "heats": 100,
+        "mean_net_pnl": 15933.444680460107,
+        "median_net_pnl": 13523.521977650267,
+        "total_net_pnl": 1593344.4680460107,
+        "worst_net_pnl": -194.8395768029077,
+        "best_net_pnl": 47013.14479326832,
+        "losses": 1,
+        "outright_wins": 74,
+        "ties": 0,
+        "average_heat_rank": 1.26,
+        "case_rank": 1,
+        "case_points": 2,
+        "mean_fees": 3243.9696,
+        "mean_fines": 0.0,
+        "errors": 0,
+        "confirmed_flat": 100
+      },
+      "straddle": {
+        "heats": 100,
+        "mean_net_pnl": 6183.299692555355,
+        "median_net_pnl": -5479.898187229715,
+        "total_net_pnl": 618329.9692555355,
+        "worst_net_pnl": -12398.681570076908,
+        "best_net_pnl": 99884.77406337584,
+        "losses": 64,
+        "outright_wins": 26,
+        "ties": 0,
+        "average_heat_rank": 1.74,
+        "case_rank": 2,
+        "case_points": 1,
+        "mean_fees": 6706.516,
+        "mean_fines": 6.289503287486918,
+        "errors": 0,
+        "confirmed_flat": 100
+      }
+    },
+    "heats": [
+      {
+        "seed": 101000,
+        "net_pnl": {
+          "buffered": 2397.110136360459,
+          "straddle": 6328.691577449557
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 101001,
+        "net_pnl": {
+          "buffered": 25205.751235150616,
+          "straddle": 71676.87769277918
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 101002,
+        "net_pnl": {
+          "buffered": 22026.572042943444,
+          "straddle": 592.8681463725807
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101003,
+        "net_pnl": {
+          "buffered": 9161.974876303604,
+          "straddle": -10251.889025613607
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101004,
+        "net_pnl": {
+          "buffered": 17371.54329060817,
+          "straddle": -6287.3154637493135
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101005,
+        "net_pnl": {
+          "buffered": 31861.95698888072,
+          "straddle": 99884.77406337584
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 101006,
+        "net_pnl": {
+          "buffered": 27823.81342288197,
+          "straddle": -9217.801082773949
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101007,
+        "net_pnl": {
+          "buffered": 26982.568646037766,
+          "straddle": -10250.065226108476
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101008,
+        "net_pnl": {
+          "buffered": 9787.817372615526,
+          "straddle": 25649.583027635494
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 101009,
+        "net_pnl": {
+          "buffered": 30839.839287920408,
+          "straddle": 45356.66802816425
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 101010,
+        "net_pnl": {
+          "buffered": 17754.540748502463,
+          "straddle": 51976.95946783869
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 101011,
+        "net_pnl": {
+          "buffered": 10419.09928573752,
+          "straddle": 1739.1965660642018
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101012,
+        "net_pnl": {
+          "buffered": 3901.134809061819,
+          "straddle": -4374.963316508642
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101013,
+        "net_pnl": {
+          "buffered": 33533.68794879645,
+          "straddle": -7995.059750357861
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101014,
+        "net_pnl": {
+          "buffered": 12637.24414405057,
+          "straddle": -8099.335001696716
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101015,
+        "net_pnl": {
+          "buffered": 7834.682841503123,
+          "straddle": -10833.199009928168
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101016,
+        "net_pnl": {
+          "buffered": 18216.95006499308,
+          "straddle": 3856.658515454037
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101017,
+        "net_pnl": {
+          "buffered": 7515.010032868082,
+          "straddle": 1429.6971177473897
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101018,
+        "net_pnl": {
+          "buffered": 0.0,
+          "straddle": -3324.160964950628
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101019,
+        "net_pnl": {
+          "buffered": 5998.945607655181,
+          "straddle": -6480.663325639442
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101020,
+        "net_pnl": {
+          "buffered": 21213.83664238186,
+          "straddle": -8052.107498888756
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101021,
+        "net_pnl": {
+          "buffered": 15450.294355500071,
+          "straddle": -8735.69401769311
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101022,
+        "net_pnl": {
+          "buffered": 34217.201405961576,
+          "straddle": -8102.881139326288
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101023,
+        "net_pnl": {
+          "buffered": 21558.36825081632,
+          "straddle": 82014.24023431433
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 101024,
+        "net_pnl": {
+          "buffered": 3455.239262431807,
+          "straddle": 18775.637833115936
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 101025,
+        "net_pnl": {
+          "buffered": 13699.125150734064,
+          "straddle": 60200.24746933431
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 101026,
+        "net_pnl": {
+          "buffered": 22224.063486231324,
+          "straddle": -8012.014328598045
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101027,
+        "net_pnl": {
+          "buffered": 35201.08503059893,
+          "straddle": 3093.9827330235566
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101028,
+        "net_pnl": {
+          "buffered": 9423.94073973584,
+          "straddle": 14156.763379423443
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 101029,
+        "net_pnl": {
+          "buffered": 9777.009800021566,
+          "straddle": -6958.257693786931
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101030,
+        "net_pnl": {
+          "buffered": 10806.768941534894,
+          "straddle": -8081.629812266241
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101031,
+        "net_pnl": {
+          "buffered": 20744.692744797074,
+          "straddle": -7509.16271034372
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101032,
+        "net_pnl": {
+          "buffered": 23255.869340991547,
+          "straddle": -1835.3216599927273
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101033,
+        "net_pnl": {
+          "buffered": 12762.431347622292,
+          "straddle": 36681.121349763736
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 101034,
+        "net_pnl": {
+          "buffered": 9800.848813275763,
+          "straddle": -6859.361344055049
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101035,
+        "net_pnl": {
+          "buffered": 15607.326206231233,
+          "straddle": 3793.7538917720667
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101036,
+        "net_pnl": {
+          "buffered": 7831.7229397402625,
+          "straddle": -8126.2184858392375
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101037,
+        "net_pnl": {
+          "buffered": 15521.070632465693,
+          "straddle": 74047.75463532677
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 101038,
+        "net_pnl": {
+          "buffered": 12508.283711802498,
+          "straddle": 21545.113351767708
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 101039,
+        "net_pnl": {
+          "buffered": 15122.614970068735,
+          "straddle": -9423.28996400538
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101040,
+        "net_pnl": {
+          "buffered": 47013.14479326832,
+          "straddle": -9683.367319980965
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101041,
+        "net_pnl": {
+          "buffered": -194.8395768029077,
+          "straddle": -8842.694687987678
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101042,
+        "net_pnl": {
+          "buffered": 23907.097593168415,
+          "straddle": 63672.39288701422
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 101043,
+        "net_pnl": {
+          "buffered": 3155.7280271247364,
+          "straddle": -7406.244427120779
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101044,
+        "net_pnl": {
+          "buffered": 219.71533535748313,
+          "straddle": 1630.8587722855154
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 101045,
+        "net_pnl": {
+          "buffered": 35129.34280764257,
+          "straddle": -7418.865113569773
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101046,
+        "net_pnl": {
+          "buffered": 0.0,
+          "straddle": -6555.264121199958
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101047,
+        "net_pnl": {
+          "buffered": 16853.922174498,
+          "straddle": 38354.133849606354
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 101048,
+        "net_pnl": {
+          "buffered": 14576.019556227795,
+          "straddle": -10462.6612004489
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 101049,
+        "net_pnl": {
+          "buffered": 28052.387323751682,
+          "straddle": 88355.3028128143
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 111000,
+        "net_pnl": {
+          "buffered": 10739.333337593267,
+          "straddle": -5666.513230702112
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111001,
+        "net_pnl": {
+          "buffered": 0.0,
+          "straddle": 2743.0503969405836
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 111002,
+        "net_pnl": {
+          "buffered": 38906.27079820967,
+          "straddle": 58001.52764138434
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 111003,
+        "net_pnl": {
+          "buffered": 36759.21750344473,
+          "straddle": -8529.326762286422
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111004,
+        "net_pnl": {
+          "buffered": 0.0,
+          "straddle": 690.0513178094407
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 111005,
+        "net_pnl": {
+          "buffered": 10820.69402778105,
+          "straddle": -9174.521412915768
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111006,
+        "net_pnl": {
+          "buffered": 16323.328796351874,
+          "straddle": -1579.297184297553
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111007,
+        "net_pnl": {
+          "buffered": 33361.39533353599,
+          "straddle": -9815.79794318469
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111008,
+        "net_pnl": {
+          "buffered": 40890.550759309524,
+          "straddle": -9532.031466769666
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111009,
+        "net_pnl": {
+          "buffered": 15404.28385768673,
+          "straddle": 17523.74108601574
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 111010,
+        "net_pnl": {
+          "buffered": 1363.1314816404047,
+          "straddle": -2118.6040241973096
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111011,
+        "net_pnl": {
+          "buffered": 4195.725117209398,
+          "straddle": -2428.0563503392914
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111012,
+        "net_pnl": {
+          "buffered": 23618.714177402973,
+          "straddle": -6169.623196934699
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111013,
+        "net_pnl": {
+          "buffered": 11773.84491160971,
+          "straddle": 34711.61661139875
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 111014,
+        "net_pnl": {
+          "buffered": 21515.216785623918,
+          "straddle": 12195.17943097779
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111015,
+        "net_pnl": {
+          "buffered": 18788.633579454356,
+          "straddle": -9795.22574657516
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111016,
+        "net_pnl": {
+          "buffered": 4420.4422888899635,
+          "straddle": -6579.794191499066
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111017,
+        "net_pnl": {
+          "buffered": 18662.771665864475,
+          "straddle": -7863.302009533538
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111018,
+        "net_pnl": {
+          "buffered": 13721.175749887836,
+          "straddle": -1763.3877510859456
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111019,
+        "net_pnl": {
+          "buffered": 9869.607940988972,
+          "straddle": 3884.6306097195484
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111020,
+        "net_pnl": {
+          "buffered": 9922.697452740627,
+          "straddle": -11742.496449399652
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111021,
+        "net_pnl": {
+          "buffered": 13347.91880456647,
+          "straddle": -6780.112938317878
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111022,
+        "net_pnl": {
+          "buffered": 5486.163586017752,
+          "straddle": -8080.306318388379
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111023,
+        "net_pnl": {
+          "buffered": 22849.315444462325,
+          "straddle": -8633.05980204101
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111024,
+        "net_pnl": {
+          "buffered": 24173.899654343564,
+          "straddle": -1509.873973420028
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111025,
+        "net_pnl": {
+          "buffered": 4304.432844596654,
+          "straddle": 15319.703748120068
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 111026,
+        "net_pnl": {
+          "buffered": 13212.647975994834,
+          "straddle": -11209.730549495434
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111027,
+        "net_pnl": {
+          "buffered": 9452.120326986871,
+          "straddle": 46681.98918497778
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 111028,
+        "net_pnl": {
+          "buffered": 45463.901712012186,
+          "straddle": -11439.803613463067
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111029,
+        "net_pnl": {
+          "buffered": 15514.622807475243,
+          "straddle": 32579.586265451857
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 111030,
+        "net_pnl": {
+          "buffered": 31797.280701998177,
+          "straddle": -11150.362927920465
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111031,
+        "net_pnl": {
+          "buffered": 8655.049670999455,
+          "straddle": 43770.628897640476
+        },
+        "rank": {
+          "buffered": 2,
+          "straddle": 1
+        }
+      },
+      {
+        "seed": 111032,
+        "net_pnl": {
+          "buffered": 41243.13376201193,
+          "straddle": -12216.025247018442
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111033,
+        "net_pnl": {
+          "buffered": 13278.562362452627,
+          "straddle": -9983.496447746933
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111034,
+        "net_pnl": {
+          "buffered": 29946.588849559666,
+          "straddle": -2008.3938656706014
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111035,
+        "net_pnl": {
+          "buffered": 7356.124993180409,
+          "straddle": -8629.707511346205
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111036,
+        "net_pnl": {
+          "buffered": 18846.676243151676,
+          "straddle": 10221.51078093335
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111037,
+        "net_pnl": {
+          "buffered": 12804.102378328882,
+          "straddle": -10074.775698599697
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111038,
+        "net_pnl": {
+          "buffered": 14403.206372536439,
+          "straddle": -5293.283143757319
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111039,
+        "net_pnl": {
+          "buffered": 6550.506772973982,
+          "straddle": -6563.012807911349
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111040,
+        "net_pnl": {
+          "buffered": 7976.372164620374,
+          "straddle": 6779.853492021852
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111041,
+        "net_pnl": {
+          "buffered": 681.1939462845494,
+          "straddle": -3966.056505326793
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111042,
+        "net_pnl": {
+          "buffered": 5525.433858877637,
+          "straddle": -2571.3824604656256
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111043,
+        "net_pnl": {
+          "buffered": 22512.37869193274,
+          "straddle": -12398.681570076908
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111044,
+        "net_pnl": {
+          "buffered": 3445.659718504407,
+          "straddle": -12311.39640984722
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111045,
+        "net_pnl": {
+          "buffered": 10782.17250292933,
+          "straddle": -11870.408811356116
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111046,
+        "net_pnl": {
+          "buffered": 23886.706930349104,
+          "straddle": -7162.979489727091
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111047,
+        "net_pnl": {
+          "buffered": 416.728478408113,
+          "straddle": -932.5640800178517
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111048,
+        "net_pnl": {
+          "buffered": 7937.924822360185,
+          "straddle": -9618.654593532352
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      },
+      {
+        "seed": 111049,
+        "net_pnl": {
+          "buffered": 10272.051512819235,
+          "straddle": -5244.843432701513
+        },
+        "rank": {
+          "buffered": 1,
+          "straddle": 2
+        }
+      }
+    ]
+  },
+  "splits": {
+    "exploratory": {
+      "summary": {
+        "buffered": {
+          "heats": 50,
+          "mean_net_pnl": 16403.29109180101,
+          "median_net_pnl": 15286.454662784403,
+          "total_net_pnl": 820164.5545900504,
+          "worst_net_pnl": -194.8395768029077,
+          "best_net_pnl": 47013.14479326832,
+          "losses": 1,
+          "outright_wins": 33,
+          "ties": 0,
+          "average_heat_rank": 1.34,
+          "case_rank": 1,
+          "case_points": 2,
+          "mean_fees": 3181.9168,
+          "mean_fines": 0.0,
+          "errors": 0,
+          "confirmed_flat": 50
+        },
+        "straddle": {
+          "heats": 50,
+          "mean_net_pnl": 12112.675794200262,
+          "median_net_pnl": -3849.562140729635,
+          "total_net_pnl": 605633.7897100131,
+          "worst_net_pnl": -10833.199009928168,
+          "best_net_pnl": 99884.77406337584,
+          "losses": 27,
+          "outright_wins": 17,
+          "ties": 0,
+          "average_heat_rank": 1.66,
+          "case_rank": 2,
+          "case_points": 1,
+          "mean_fees": 6993.6352,
+          "mean_fines": 8.276584581633893,
+          "errors": 0,
+          "confirmed_flat": 50
+        }
+      },
+      "heats": [
+        {
+          "seed": 101000,
+          "net_pnl": {
+            "buffered": 2397.110136360459,
+            "straddle": 6328.691577449557
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 101001,
+          "net_pnl": {
+            "buffered": 25205.751235150616,
+            "straddle": 71676.87769277918
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 101002,
+          "net_pnl": {
+            "buffered": 22026.572042943444,
+            "straddle": 592.8681463725807
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101003,
+          "net_pnl": {
+            "buffered": 9161.974876303604,
+            "straddle": -10251.889025613607
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101004,
+          "net_pnl": {
+            "buffered": 17371.54329060817,
+            "straddle": -6287.3154637493135
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101005,
+          "net_pnl": {
+            "buffered": 31861.95698888072,
+            "straddle": 99884.77406337584
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 101006,
+          "net_pnl": {
+            "buffered": 27823.81342288197,
+            "straddle": -9217.801082773949
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101007,
+          "net_pnl": {
+            "buffered": 26982.568646037766,
+            "straddle": -10250.065226108476
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101008,
+          "net_pnl": {
+            "buffered": 9787.817372615526,
+            "straddle": 25649.583027635494
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 101009,
+          "net_pnl": {
+            "buffered": 30839.839287920408,
+            "straddle": 45356.66802816425
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 101010,
+          "net_pnl": {
+            "buffered": 17754.540748502463,
+            "straddle": 51976.95946783869
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 101011,
+          "net_pnl": {
+            "buffered": 10419.09928573752,
+            "straddle": 1739.1965660642018
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101012,
+          "net_pnl": {
+            "buffered": 3901.134809061819,
+            "straddle": -4374.963316508642
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101013,
+          "net_pnl": {
+            "buffered": 33533.68794879645,
+            "straddle": -7995.059750357861
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101014,
+          "net_pnl": {
+            "buffered": 12637.24414405057,
+            "straddle": -8099.335001696716
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101015,
+          "net_pnl": {
+            "buffered": 7834.682841503123,
+            "straddle": -10833.199009928168
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101016,
+          "net_pnl": {
+            "buffered": 18216.95006499308,
+            "straddle": 3856.658515454037
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101017,
+          "net_pnl": {
+            "buffered": 7515.010032868082,
+            "straddle": 1429.6971177473897
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101018,
+          "net_pnl": {
+            "buffered": 0.0,
+            "straddle": -3324.160964950628
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101019,
+          "net_pnl": {
+            "buffered": 5998.945607655181,
+            "straddle": -6480.663325639442
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101020,
+          "net_pnl": {
+            "buffered": 21213.83664238186,
+            "straddle": -8052.107498888756
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101021,
+          "net_pnl": {
+            "buffered": 15450.294355500071,
+            "straddle": -8735.69401769311
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101022,
+          "net_pnl": {
+            "buffered": 34217.201405961576,
+            "straddle": -8102.881139326288
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101023,
+          "net_pnl": {
+            "buffered": 21558.36825081632,
+            "straddle": 82014.24023431433
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 101024,
+          "net_pnl": {
+            "buffered": 3455.239262431807,
+            "straddle": 18775.637833115936
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 101025,
+          "net_pnl": {
+            "buffered": 13699.125150734064,
+            "straddle": 60200.24746933431
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 101026,
+          "net_pnl": {
+            "buffered": 22224.063486231324,
+            "straddle": -8012.014328598045
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101027,
+          "net_pnl": {
+            "buffered": 35201.08503059893,
+            "straddle": 3093.9827330235566
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101028,
+          "net_pnl": {
+            "buffered": 9423.94073973584,
+            "straddle": 14156.763379423443
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 101029,
+          "net_pnl": {
+            "buffered": 9777.009800021566,
+            "straddle": -6958.257693786931
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101030,
+          "net_pnl": {
+            "buffered": 10806.768941534894,
+            "straddle": -8081.629812266241
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101031,
+          "net_pnl": {
+            "buffered": 20744.692744797074,
+            "straddle": -7509.16271034372
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101032,
+          "net_pnl": {
+            "buffered": 23255.869340991547,
+            "straddle": -1835.3216599927273
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101033,
+          "net_pnl": {
+            "buffered": 12762.431347622292,
+            "straddle": 36681.121349763736
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 101034,
+          "net_pnl": {
+            "buffered": 9800.848813275763,
+            "straddle": -6859.361344055049
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101035,
+          "net_pnl": {
+            "buffered": 15607.326206231233,
+            "straddle": 3793.7538917720667
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101036,
+          "net_pnl": {
+            "buffered": 7831.7229397402625,
+            "straddle": -8126.2184858392375
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101037,
+          "net_pnl": {
+            "buffered": 15521.070632465693,
+            "straddle": 74047.75463532677
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 101038,
+          "net_pnl": {
+            "buffered": 12508.283711802498,
+            "straddle": 21545.113351767708
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 101039,
+          "net_pnl": {
+            "buffered": 15122.614970068735,
+            "straddle": -9423.28996400538
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101040,
+          "net_pnl": {
+            "buffered": 47013.14479326832,
+            "straddle": -9683.367319980965
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101041,
+          "net_pnl": {
+            "buffered": -194.8395768029077,
+            "straddle": -8842.694687987678
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101042,
+          "net_pnl": {
+            "buffered": 23907.097593168415,
+            "straddle": 63672.39288701422
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 101043,
+          "net_pnl": {
+            "buffered": 3155.7280271247364,
+            "straddle": -7406.244427120779
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101044,
+          "net_pnl": {
+            "buffered": 219.71533535748313,
+            "straddle": 1630.8587722855154
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 101045,
+          "net_pnl": {
+            "buffered": 35129.34280764257,
+            "straddle": -7418.865113569773
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101046,
+          "net_pnl": {
+            "buffered": 0.0,
+            "straddle": -6555.264121199958
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101047,
+          "net_pnl": {
+            "buffered": 16853.922174498,
+            "straddle": 38354.133849606354
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 101048,
+          "net_pnl": {
+            "buffered": 14576.019556227795,
+            "straddle": -10462.6612004489
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 101049,
+          "net_pnl": {
+            "buffered": 28052.387323751682,
+            "straddle": 88355.3028128143
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        }
+      ]
+    },
+    "held_out": {
+      "summary": {
+        "buffered": {
+          "heats": 50,
+          "mean_net_pnl": 15463.598269119206,
+          "median_net_pnl": 13008.375177161859,
+          "total_net_pnl": 773179.9134559603,
+          "worst_net_pnl": 0.0,
+          "best_net_pnl": 45463.901712012186,
+          "losses": 0,
+          "outright_wins": 41,
+          "ties": 0,
+          "average_heat_rank": 1.18,
+          "case_rank": 1,
+          "case_points": 2,
+          "mean_fees": 3306.0224,
+          "mean_fines": 0.0,
+          "errors": 0,
+          "confirmed_flat": 50
+        },
+        "straddle": {
+          "heats": 50,
+          "mean_net_pnl": 253.92359091044833,
+          "median_net_pnl": -5918.068213818406,
+          "total_net_pnl": 12696.179545522416,
+          "worst_net_pnl": -12398.681570076908,
+          "best_net_pnl": 58001.52764138434,
+          "losses": 37,
+          "outright_wins": 9,
+          "ties": 0,
+          "average_heat_rank": 1.82,
+          "case_rank": 2,
+          "case_points": 1,
+          "mean_fees": 6419.3968,
+          "mean_fines": 4.3024219933399435,
+          "errors": 0,
+          "confirmed_flat": 50
+        }
+      },
+      "heats": [
+        {
+          "seed": 111000,
+          "net_pnl": {
+            "buffered": 10739.333337593267,
+            "straddle": -5666.513230702112
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111001,
+          "net_pnl": {
+            "buffered": 0.0,
+            "straddle": 2743.0503969405836
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 111002,
+          "net_pnl": {
+            "buffered": 38906.27079820967,
+            "straddle": 58001.52764138434
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 111003,
+          "net_pnl": {
+            "buffered": 36759.21750344473,
+            "straddle": -8529.326762286422
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111004,
+          "net_pnl": {
+            "buffered": 0.0,
+            "straddle": 690.0513178094407
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 111005,
+          "net_pnl": {
+            "buffered": 10820.69402778105,
+            "straddle": -9174.521412915768
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111006,
+          "net_pnl": {
+            "buffered": 16323.328796351874,
+            "straddle": -1579.297184297553
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111007,
+          "net_pnl": {
+            "buffered": 33361.39533353599,
+            "straddle": -9815.79794318469
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111008,
+          "net_pnl": {
+            "buffered": 40890.550759309524,
+            "straddle": -9532.031466769666
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111009,
+          "net_pnl": {
+            "buffered": 15404.28385768673,
+            "straddle": 17523.74108601574
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 111010,
+          "net_pnl": {
+            "buffered": 1363.1314816404047,
+            "straddle": -2118.6040241973096
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111011,
+          "net_pnl": {
+            "buffered": 4195.725117209398,
+            "straddle": -2428.0563503392914
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111012,
+          "net_pnl": {
+            "buffered": 23618.714177402973,
+            "straddle": -6169.623196934699
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111013,
+          "net_pnl": {
+            "buffered": 11773.84491160971,
+            "straddle": 34711.61661139875
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 111014,
+          "net_pnl": {
+            "buffered": 21515.216785623918,
+            "straddle": 12195.17943097779
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111015,
+          "net_pnl": {
+            "buffered": 18788.633579454356,
+            "straddle": -9795.22574657516
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111016,
+          "net_pnl": {
+            "buffered": 4420.4422888899635,
+            "straddle": -6579.794191499066
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111017,
+          "net_pnl": {
+            "buffered": 18662.771665864475,
+            "straddle": -7863.302009533538
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111018,
+          "net_pnl": {
+            "buffered": 13721.175749887836,
+            "straddle": -1763.3877510859456
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111019,
+          "net_pnl": {
+            "buffered": 9869.607940988972,
+            "straddle": 3884.6306097195484
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111020,
+          "net_pnl": {
+            "buffered": 9922.697452740627,
+            "straddle": -11742.496449399652
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111021,
+          "net_pnl": {
+            "buffered": 13347.91880456647,
+            "straddle": -6780.112938317878
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111022,
+          "net_pnl": {
+            "buffered": 5486.163586017752,
+            "straddle": -8080.306318388379
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111023,
+          "net_pnl": {
+            "buffered": 22849.315444462325,
+            "straddle": -8633.05980204101
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111024,
+          "net_pnl": {
+            "buffered": 24173.899654343564,
+            "straddle": -1509.873973420028
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111025,
+          "net_pnl": {
+            "buffered": 4304.432844596654,
+            "straddle": 15319.703748120068
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 111026,
+          "net_pnl": {
+            "buffered": 13212.647975994834,
+            "straddle": -11209.730549495434
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111027,
+          "net_pnl": {
+            "buffered": 9452.120326986871,
+            "straddle": 46681.98918497778
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 111028,
+          "net_pnl": {
+            "buffered": 45463.901712012186,
+            "straddle": -11439.803613463067
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111029,
+          "net_pnl": {
+            "buffered": 15514.622807475243,
+            "straddle": 32579.586265451857
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 111030,
+          "net_pnl": {
+            "buffered": 31797.280701998177,
+            "straddle": -11150.362927920465
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111031,
+          "net_pnl": {
+            "buffered": 8655.049670999455,
+            "straddle": 43770.628897640476
+          },
+          "rank": {
+            "buffered": 2,
+            "straddle": 1
+          }
+        },
+        {
+          "seed": 111032,
+          "net_pnl": {
+            "buffered": 41243.13376201193,
+            "straddle": -12216.025247018442
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111033,
+          "net_pnl": {
+            "buffered": 13278.562362452627,
+            "straddle": -9983.496447746933
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111034,
+          "net_pnl": {
+            "buffered": 29946.588849559666,
+            "straddle": -2008.3938656706014
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111035,
+          "net_pnl": {
+            "buffered": 7356.124993180409,
+            "straddle": -8629.707511346205
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111036,
+          "net_pnl": {
+            "buffered": 18846.676243151676,
+            "straddle": 10221.51078093335
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111037,
+          "net_pnl": {
+            "buffered": 12804.102378328882,
+            "straddle": -10074.775698599697
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111038,
+          "net_pnl": {
+            "buffered": 14403.206372536439,
+            "straddle": -5293.283143757319
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111039,
+          "net_pnl": {
+            "buffered": 6550.506772973982,
+            "straddle": -6563.012807911349
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111040,
+          "net_pnl": {
+            "buffered": 7976.372164620374,
+            "straddle": 6779.853492021852
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111041,
+          "net_pnl": {
+            "buffered": 681.1939462845494,
+            "straddle": -3966.056505326793
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111042,
+          "net_pnl": {
+            "buffered": 5525.433858877637,
+            "straddle": -2571.3824604656256
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111043,
+          "net_pnl": {
+            "buffered": 22512.37869193274,
+            "straddle": -12398.681570076908
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111044,
+          "net_pnl": {
+            "buffered": 3445.659718504407,
+            "straddle": -12311.39640984722
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111045,
+          "net_pnl": {
+            "buffered": 10782.17250292933,
+            "straddle": -11870.408811356116
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111046,
+          "net_pnl": {
+            "buffered": 23886.706930349104,
+            "straddle": -7162.979489727091
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111047,
+          "net_pnl": {
+            "buffered": 416.728478408113,
+            "straddle": -932.5640800178517
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111048,
+          "net_pnl": {
+            "buffered": 7937.924822360185,
+            "straddle": -9618.654593532352
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        },
+        {
+          "seed": 111049,
+          "net_pnl": {
+            "buffered": 10272.051512819235,
+            "straddle": -5244.843432701513
+          },
+          "rank": {
+            "buffered": 1,
+            "straddle": 2
+          }
+        }
+      ]
+    }
+  }
+}

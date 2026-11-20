@@ -1,5 +1,7 @@
 # Supplied research: implementation map
 
+> Historical report. Buffered is now the only supported volatility strategy; commands or alternatives described below refer to earlier revisions. Use the current README for runnable instructions.
+
 Source: the strategy notes supplied in this chat on November 17, 2026. They prioritize case-specific mechanisms and explicitly do not claim a verified ranking of winning bots. The official rules remain the authority for allowed actions.
 
 | Research recommendation | Implementation / status |

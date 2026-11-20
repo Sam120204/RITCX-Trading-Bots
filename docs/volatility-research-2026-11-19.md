@@ -1,5 +1,7 @@
 # Volatility strategy audit — November 19, 2026
 
+> Historical report. Buffered is now the only supported volatility strategy; commands or alternatives described below refer to earlier revisions. Use the current README for runnable instructions.
+
 Subsequent revision: [buffered entries reduce risk-limit churn](volatility-buffered-followup.md).
 The reports below are retained as evidence for the code version evaluated at this stage.
 The user subsequently selected `buffered` as the default; references below to

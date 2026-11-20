@@ -6,6 +6,8 @@ A Python trading system for the **RITCx Volatility Trading** and **RITCx Algorit
 
 The implementation incorporates the supplied research: news-driven option valuation and delta hedging, selective full-size tender evaluation, liquidity-aware execution, FX-aware basket trading, and post-heat analysis. Optional passive tender execution is available; put–call parity is a diagnostic scanner. The current version has been tested against local simulated APIs, **not yet validated for profitability on fresh competition heats**.
 
+**Selected volatility strategy: `buffered` only.** The alternative volatility implementations have been removed. On 100 fresh paired synthetic case heats, buffered averaged **+$15,933 net per heat** and finished ahead of the discarded straddle in **74/100** heats (average head-to-head rank **1.26**). These are local simulation results, not guaranteed competition returns. [Judge-style evaluation](reports/volatility-judge-rerun-2026-11-19.md).
+
 ## Trading logic at a glance
 
 [![Trading algorithm flow: preflight and heat routing, volatility and ETF strategies, shared risk controls, and final reconciliation](docs/assets/trading-algorithm.png)](docs/assets/trading-algorithm.png)
@@ -83,7 +85,7 @@ A new launcher can join an already-active heat before tick 250. From tick 250 on
 ### Timing and operating limits
 
 These are the **default bot policies**, distinct from the published maximum allowances.
-Volatility uses `buffered`; select `--volatility-strategy baseline` for the original smaller policy:
+Volatility uses `buffered`, the only supported volatility policy:
 
 | Policy | Volatility | ETF |
 |---|---:|---:|
@@ -101,132 +103,52 @@ The PDFs allow terminal settlement; these bots choose early liquidation. Loss th
 
 ### Run a local 300-second Volatility simulation now
 
-**November 19 strategy update:** [case audit, public research, and new policy details](docs/volatility-research-2026-11-19.md).
-**Latest revision:** [`buffered` reduces repeated entries and risk closes](docs/volatility-buffered-followup.md)
-by leaving more room below the entry risk limits. Its position caps are the same as `scaled`.
-`buffered` is now the default for the launcher, standalone volatility bot, and local dashboard.
-To watch the new forecast-based sizing and execution in a scenario based on the published case:
+`buffered` is the only volatility strategy in the launcher, standalone bot, and local dashboard.
+Run a local 300-second synthetic heat with no credentials or external server:
 
 ```sh
 cd "/Users/samzhong/Documents/UofT/RITCxUofT"
-caffeinate -i python3 -u -m ritcx.mock --scenario case --policy buffered
+caffeinate -i python3 -u -m ritcx.mock --seed 7
 ```
 
-It runs for 300 real seconds. `buffered` permits larger positions; use `--policy buffered_small`
-to keep the original 100-contract position cap, or `--policy baseline` for the original strategy.
-Add `--seed 1459556188` to repeat a path or `--speed 20` for an accelerated check.
-The case scenario's maker lag and forecast-error distribution remain assumptions, so its
-P&L is not a prediction of competition performance. A flat initial P&L can be correct:
-the initial maker and analyst volatility agree, and the first forecast arrives at tick 37.
+The default is `--scenario case --policy buffered`. Add `--speed 20` for a 15-second
+accelerated check, or `--plain` for scrolling output. The dashboard shows net P&L,
+realized and unrealized P&L, fees, fines, drawdown, inventory, and fills. Net P&L
+already includes fees and fines. It continues through tick 300 even if the strategy
+closes early. On non-Mac systems omit `caffeinate -i`.
 
-To watch the strategy without waiting for the Rotman practice server:
+Each run uses a random seed unless `--seed` is supplied. The same seed and scenario
+reproduce the market path. The initial maker and analyst volatility can agree,
+so waiting for the first forecast at tick 37 is expected. Choose `--scenario case_fast`,
+`case_latency`, `standard`, or `stress` to test other market assumptions; these are
+market scenarios, not different strategies. `demo` remains an optimistic market model.
+
+The local runner never reads `.env`, uses RIT credentials, opens a network connection,
+or changes your practice account. Ctrl-C saves an interrupted run with its current
+synthetic inventory. Reports and event logs are written under `logs/mock/`.
+
+**These are synthetic tests, uncalibrated to official RIT conditions.** Requests and
+orders consume simulated time, and orders fill at arrival quotes. The simulator
+uses full fills with no queue or market impact. Published commissions, position
+limits, and delta fines apply. Failures are retained in the reports; settlement does
+not turn a failed strategy run into a successful one.
+
+Evaluate buffered over disjoint seed sets:
 
 ```sh
-cd "/Users/samzhong/Documents/UofT/RITCxUofT"
-caffeinate -i python3 -m ritcx.mock
+python3 -m ritcx.mock_evaluate --workers 4 --seeds 50 \
+  --scenarios case --exploratory-start 101000 --held-out-start 111000 \
+  --output reports/volatility-buffered-only-validation-2026-11-19.json
 ```
 
-This starts the **case scenario with the buffered policy** immediately and runs for **300 wall-clock seconds**, updating a
-terminal dashboard once per simulated second. It shows net P&L, realized and
-unrealized P&L, commissions, delta fines, drawdown, positions, recent fills, and
-a P&L chart. It also explains waiting decisions such as `no edge after costs` or
-`risk capacity / no admissible entry`. Net P&L already includes fees and fines. The strategy can close early;
-the dashboard continues through tick 300. On non-Mac systems omit `caffeinate -i`.
-Use a terminal window at least 80 columns wide and 24 rows tall; taller windows show more detail,
-or add `--plain` for scrolling status updates every five simulated seconds.
+This runs 100 heats: 50 seeds in each of two disjoint sets. To test adverse assumptions,
+pass `--scenarios case case_fast case_latency standard stress`. Reports retain net
+P&L, fees, fines, failures, drawdown, flat-state confirmation, settings, and source hashes.
 
-Each run chooses a new random seed and displays it. To repeat the same scenario,
-or run a 300-tick heat in about 30 seconds:
-
-```sh
-python3 -m ritcx.mock --seed 7
-python3 -m ritcx.mock --seed 7 --speed 10
-python3 -m ritcx.mock --scenario stress --seed 7
-python3 -m ritcx.mock --scenario standard --policy strict_edge --seed 7
-```
-
-The previous optimistic simulator is retained as `--scenario demo`; to reproduce
-the earlier +$4,218.16 example use `--scenario demo --policy baseline --seed 7`. A seed identifies the
-same market only within the same scenario and simulator version.
-
-The original local policies are `baseline` (the earlier small-position strategy), `strict_edge`
-(entry edge >0.10 instead of >0.025), `wide_hedge` (1,000 instead of 500 delta), and
-`half_size` (5-contract entries and a 50-contract cap instead of 10/100). Post-fill
-hedges remain tight for these four policies. The new `scaled`/`scaled_small` and
-`adaptive`/`adaptive_small` policies use a 1,200-delta band after entries and stronger
-portfolio stress checks. `adaptive` tests current-sigma maker convergence;
-`scaled` retains forecast-based remaining-variance valuation. Live selection is explicit:
-
-```sh
-python3 -m ritcx --practice --preflight --volatility-strategy buffered
-caffeinate -i python3 -u -m ritcx --practice --trade --rounds 1 --max-seconds 1800 --volatility-strategy buffered
-```
-
-This practice command waits for an active server heat and sends simulated exchange orders.
-The normal launcher without `--volatility-strategy` uses `buffered`. Use
-`--volatility-strategy baseline` to restore the earlier small-position strategy,
-or `--strategy baseline` when running `ritcx.volatility.bot` directly.
-
-The local runner never reads `.env`, uses RIT credentials, opens a network
-connection, or changes your practice account. Stop a separately armed practice
-launcher with Ctrl-C if you no longer want it to trade when the server starts.
-Ctrl-C in the local runner stops immediately and saves an **interrupted** report
-with any remaining synthetic positions. Every run saves a JSON summary and a
-JSONL event log under `logs/mock/`; paths are printed at exit.
-
-**These are synthetic stress tests, uncalibrated to official RIT conditions.**
-The runner reuses production trading, hedging, risk checks, reconciliation, and
-the close-out threshold including observed cycle duration. Standard/stress modes
-charge simulated time for every API request and order, then wait 0.6 seconds per
-cycle for baseline (0.1 seconds for the new policies). The price path advances during those delays; orders fill at the arrival
-quote. Accelerating wall time leaves simulated timing and outcomes unchanged.
-
-| Assumption | Standard | Stress |
-|---|---:|---:|
-| Forecast error standard deviation, plus a shared bias with half that deviation | 4.5 volatility percentage points | 9 points |
-| Forecast range half-width | 3 points | 2.5 points |
-| Quote response time constant, sampled per week | 1–12 seconds | 0.5–8 seconds |
-| Quote volatility innovation per tick | 0.3 points | 0.8 points |
-| Time per API request | 15–55 ms | 60–180 ms |
-| Additional order delay | 80–400 ms | 300–1,500 ms |
-
-The market maker reacts to released forecasts and current volatility. For unknown
-future weeks it reverts toward a 25% long-run estimate; the bot carries its latest
-news estimate forward. Forecast ranges can miss the realized outcome. Prices use
-Black–Scholes and a $0.02 spread with a nonnegative bid floor. RTM follows a
-geometric Brownian path with four weekly volatility regimes. Forecast, quote,
-price, and transport randomness are separated so policy comparisons share the
-same exogenous market path. The clock and market move in one-second price steps;
-subsecond request delays accumulate, but prices do not change within a tick.
-
-Fills remain full-size, with no queue, market impact, partial fills, or randomly
-injected outages. Published commissions, limits, and per-tick delta fines apply.
-Remaining inventory settles at tick 300 without an extra commission. A trading
-error stops new mutations but the local market continues to settlement; reports
-retain the error, inventory at failure, and positions settled at expiry. An error
-is never relabeled as success just because settlement clears inventory.
-
-Run a reproducible comparison of all four policies on both scenarios:
-
-```sh
-python3 -m ritcx.mock_evaluate --seeds 30 --output reports/mock-evaluation.json
-```
-
-This evaluates **480 accelerated heats**: 30 seeds × 2 scenarios × 4 policies ×
-2 disjoint seed sets (exploratory 0–29, held-out 10000–10029). Every policy sees the
-same seeds. Reports include average/median/worst P&L, losses, drawdown, fees, fines,
-failures, and paired changes versus baseline. Failed runs are retained. Policies
-are fixed in advance; the command does not tune or deploy a winner.
-See [the November 19 evaluation](docs/mock-evaluation.md) for results and limits.
-
-Compare the new policies on the case assumptions and adverse sensitivity scenarios:
-
-```sh
-python3 -m ritcx.mock_evaluate --seeds 20 --scenarios case case_fast case_latency standard stress --policies baseline scaled_small scaled --exploratory-start 60000 --held-out-start 70000 --output reports/volatility-scaled-evaluation.json
-```
-
-This runs 600 accelerated synthetic heats. Reports include failures and source hashes;
-rerunning the same seeds is a reproducibility check, not additional independent evidence.
+Explicit `--policy buffered` (local), `--strategy buffered` (standalone bot), and
+`--volatility-strategy buffered` (launcher) are accepted for compatibility; no other
+volatility policy is available. Historical research and comparison reports describe
+previous revisions and are not current runnable instructions.
 
 ### Connect to the official practice server
 

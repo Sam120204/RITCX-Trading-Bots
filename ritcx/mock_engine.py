@@ -1,22 +1,14 @@
 """Deterministic local heat runner shared by the dashboard and paired evaluation."""
 
-from dataclasses import asdict, replace
+from dataclasses import asdict
 
 from .execution import confirm_flat
 from .mock_market import MockClient, MockMarket
 from .runtime import TradingError
-from .volatility.bot import LIVE_POLICIES, StrategyPolicy, liquidation_start, trade_once, validate
+from .volatility.bot import LIVE_POLICIES, liquidation_start, trade_once, validate
 from .volatility.model import VolatilityCurve, candidates
 
-POLICIES = {
-    "baseline": StrategyPolicy(),
-    "strict_edge": StrategyPolicy(minimum_edge=0.10),
-    "wide_hedge": StrategyPolicy(hedge_band=1000),
-    "half_size": StrategyPolicy(entry_size=5, option_cap=50),
-    "baseline_fast": StrategyPolicy(idle_seconds=0.1),
-    **{k: v for k, v in LIVE_POLICIES.items() if k != "baseline"},
-    "adaptive_slow": replace(LIVE_POLICIES["adaptive"], idle_seconds=0.6),
-}
+POLICIES = LIVE_POLICIES
 
 
 class InterruptedSimulation(Exception):
@@ -24,7 +16,7 @@ class InterruptedSimulation(Exception):
 
 
 def run_heat(
-    seed, scenario="standard", policy_name="baseline", *, audit=None, on_snapshot=None, stopped=None
+    seed, scenario="standard", policy_name="buffered", *, audit=None, on_snapshot=None, stopped=None
 ):
     """Run 300 simulation seconds; callbacks may pace wall time without altering the path.
 
@@ -131,15 +123,10 @@ def run_heat(
             action = trade_once(client, securities, curve, tick, closing, policy=policy)
             emit("decision", tick=tick, action=action, closing=closing)
             if action == "hold":
-                scan = candidates
-                if policy.algorithm != "term_variance":
-                    from .volatility.adaptive import signals as adaptive_signals
-
-                    def scan(securities, curve, tick):
-                        return adaptive_signals(securities, curve, tick, policy)
-
                 signals = [
-                    c for c in scan(securities, curve, tick) if c["edge"] > policy.minimum_edge
+                    c
+                    for c in candidates(securities, curve, tick)
+                    if c["edge"] > policy.minimum_edge
                 ]
                 action = "risk capacity / no admissible entry" if signals else "no edge after costs"
             if closing and action == "flat":
@@ -148,7 +135,7 @@ def run_heat(
                 state = "FLAT - watching to 300s"
             measure()
             # Preserve the old one-cycle-per-second demo. Other scenarios use
-            # production's 0.6-second idle plus time consumed by each request.
+            # production's 0.1-second idle plus time consumed by each request.
             idle = 1.0 if scenario == "demo" else policy.idle_seconds
             cycles.append(market.clock - cycle_start + idle)
             market.advance_time(idle)

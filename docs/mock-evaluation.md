@@ -1,5 +1,7 @@
 # Local volatility evaluation — November 19, 2026
 
+> Historical report. Buffered is now the only supported volatility strategy; commands or alternatives described below refer to earlier revisions. Use the current README for runnable instructions.
+
 **Scope correction after rereading the official PDF:** the following historical
 standard/stress results are sensitivity tests. Their maker-pricing and forecast
 assumptions differ from the published description and cannot establish that the

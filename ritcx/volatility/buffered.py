@@ -1,39 +1,9 @@
-"""Cost-aware trading toward the maker's announced-volatility convergence target.
-
-This target is a short-horizon quote hypothesis, not a guaranteed expiry value.
-The legacy term-variance model remains available for comparison.
-"""
+"""Buffered forecast valuation, stressed entry limits, and confirmed execution."""
 
 import math
 
 from ..execution import submit_change
 from .model import VolatilityCurve, candidates, implied_volatility, option_values
-
-
-def signals(securities, curve, tick, policy=None):
-    if policy is not None and policy.algorithm == "forecast_adaptive":
-        return candidates(securities, curve, tick)
-    stock = next(s for s in securities if s["ticker"] == "RTM")
-    spot = (stock["bid"] + stock["ask"]) / 2
-    result = []
-    for sec in securities:
-        if sec["type"] != "OPTION":
-            continue
-        fair, delta = option_values(sec, spot, tick, curve.current, curve.rate)
-        # Both commissions, exit half-spread, stock round-trip costs, and a
-        # small reserve for subsequent delta adjustments. Entry crosses ask/bid.
-        cost = (
-            2 * sec["trading_fee"] / sec["size"]
-            + (sec["ask"] - sec["bid"]) / 2
-            + 0.06 * abs(delta)
-            + 0.01
-        )
-        for action, edge in (("BUY", fair - sec["ask"] - cost), ("SELL", sec["bid"] - fair - cost)):
-            if min(fair, sec["bid"]) >= 0.05 and edge > 0:
-                result.append(
-                    dict(ticker=sec["ticker"], action=action, edge=edge, fair=fair, delta=delta)
-                )
-    return sorted(result, key=lambda s: s["edge"], reverse=True)
 
 
 def _risk_vectors(securities, curve, tick, cycle_seconds):
@@ -172,11 +142,7 @@ def trade(client, securities, curve, tick, flatten, policy):
             )
         )
     for sec in close_candidates:
-        sigma = (
-            curve.effective(tick, "low" if sec["position"] > 0 else "high")
-            if policy.algorithm == "forecast_adaptive"
-            else curve.current
-        )
+        sigma = curve.effective(tick, "low" if sec["position"] > 0 else "high")
         fair, _ = option_values(sec, spot, tick, sigma, curve.rate)
         residual = fair - sec["bid"] if sec["position"] > 0 else sec["ask"] - fair
         if flatten or unsafe or residual <= 0.035:
@@ -194,7 +160,7 @@ def trade(client, securities, curve, tick, flatten, policy):
     if tick >= 270:
         return "no_new_entries"
     choices = []
-    for choice in signals(securities, curve, tick, policy):
+    for choice in candidates(securities, curve, tick):
         if choice["edge"] <= policy.minimum_edge:
             continue
         # Stronger dislocations earn a larger ticket; the portfolio risk envelope

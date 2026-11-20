@@ -126,15 +126,6 @@ class VolatilityResearchTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             vol.black_scholes(float("nan"), 50, 0.1, 0, 0.2, "C")
 
-    def test_exit_hysteresis_retains_a_profitable_but_no_longer_enterable_short(self):
-        curve = vol.VolatilityCurve(0, {0: (0.2, 0.2)})
-        fair = vol.black_scholes(50, 50, 1 / 12, 0, 0.2, "C")[0]
-        sec = option(position=-10, bid=fair + 0.06, ask=fair + 0.08)
-        self.assertEqual(vol.candidates([stock(), sec], curve, 0), [])
-        self.assertFalse(vol.should_exit(sec, 50, curve, 0))
-        sec.update(bid=fair - 0.01, ask=fair + 0.01)
-        self.assertTrue(vol.should_exit(sec, 50, curve, 0))
-
     def test_put_call_parity_scanner_subtracts_three_leg_costs(self):
         sec = [stock(), option("RTM50C", bid=2, ask=2.02), option("RTM50P", bid=1, ask=1.02)]
         signals = vol.parity_opportunities(sec, 0, 0)

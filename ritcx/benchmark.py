@@ -9,7 +9,9 @@ import statistics
 import time
 from pathlib import Path
 
-from .volatility.model import VolatilityCurve, allowed, black_scholes, candidates, hedge_quantity
+from .volatility.bot import DEFAULT_POLICY
+from .volatility.buffered import admissible_quantity
+from .volatility.model import VolatilityCurve, black_scholes, candidates, hedge_quantity
 
 
 def main():
@@ -41,7 +43,7 @@ def main():
         start = time.perf_counter()
         candidates(securities, curve, 100)
         hedge_quantity(securities, 100, 0.2, 0)
-        allowed(securities, "RTM50C", 10, 100, 0.2, 0)
+        admissible_quantity(securities, "RTM50C", 100, curve, 100, DEFAULT_POLICY)
         timings.append((time.perf_counter() - start) * 1000)
     timings.sort()
     source = Path(__file__).with_name("volatility") / "model.py"

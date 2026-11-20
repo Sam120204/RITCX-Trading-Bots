@@ -99,7 +99,7 @@ def main():
         "--policy",
         choices=POLICIES,
         default="buffered",
-        help="Local policy (default: buffered); baseline restores the original small position limits",
+        help="Only supported volatility policy (default: buffered)",
     )
     parser.add_argument("--output-dir", type=Path, default=ROOT / "logs" / "mock")
     args = parser.parse_args()

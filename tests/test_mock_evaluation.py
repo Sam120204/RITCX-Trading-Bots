@@ -39,7 +39,7 @@ class MockEvaluationTests(unittest.TestCase):
         self.assertEqual(result["settlement_runs"], 1)
         self.assertEqual(result["fines"], 5)
 
-    def test_cli_reports_disjoint_paired_seeds_and_all_policies(self):
+    def test_cli_reports_disjoint_seeds_for_buffered(self):
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp) / "evaluation.json"
             run = subprocess.run(
@@ -58,9 +58,9 @@ class MockEvaluationTests(unittest.TestCase):
             )
             self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
             result = json.loads(output.read_text())
-            self.assertEqual(result["heat_count"], 16)
+            self.assertEqual(result["heat_count"], 4)
             groups = result["groups"]
-            self.assertEqual(len(groups), 16)
+            self.assertEqual(len(groups), 4)
             self.assertEqual(
                 {g["runs"][0]["seed"] for g in groups if g["split"] == "exploratory"}, {0}
             )

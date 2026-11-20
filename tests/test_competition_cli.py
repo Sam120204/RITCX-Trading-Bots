@@ -199,11 +199,6 @@ class CompetitionCLITests(unittest.TestCase):
             0,
         )
 
-    def test_explicit_baseline_retains_original_small_tickets(self):
-        _, orders = self.run_case("volatility", volatility_strategy="baseline")
-        self.assertEqual(orders[0]["quantity"], 10)
-        self.assertEqual(len(orders), 4)
-
     def test_etf_accepts_qualified_tender_unwinds_and_converts_net_usd_cash(self):
         posted, orders = self.run_case("etf")
         self.assertEqual(posted[0], "/v1/tenders/3")

@@ -102,21 +102,12 @@ class RiskTests(unittest.TestCase):
         self.assertEqual(result[0]["action"], "SELL")
         self.assertGreater(result[0]["edge"], 0.7)
 
-    def test_gross_limit_cannot_be_offset_by_opposite_options(self):
-        securities = [stock(), option(position=60), option("RTM50P", position=-40)]
-        self.assertFalse(s.allowed(securities, "RTM50C", 1, 0, 0.2, 0))
-        self.assertTrue(s.allowed(securities, "RTM50C", -10, 0, 0.2, 0))
-
     def test_hedge_is_target_minus_actual_not_division(self):
         securities = [stock(), option(position=10)]
         # For an ATM zero-rate call, delta=(1+call_price/spot)/2=.5191.
         self.assertEqual(s.hedge_quantity(securities, 0, 0.2, 0), -519)
         securities[0]["position"] = -500
         self.assertEqual(s.hedge_quantity(securities, 0, 0.2, 0), -19)
-
-    def test_contract_multiplier_and_pending_delta(self):
-        securities = [stock(position=6000), option()]
-        self.assertFalse(s.allowed(securities, "RTM50C", 10, 0, 0.2, 0))
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ import math
 import signal
 import time
 from contextlib import nullcontext
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -22,70 +22,30 @@ from ..runtime import (
 )
 from .model import (
     VolatilityCurve,
-    allowed,
     candidates,
     hedge_quantity,
     parity_opportunities,
-    should_exit,
 )
 
 
 @dataclass(frozen=True)
 class StrategyPolicy:
-    """Policy settings; CLI callers explicitly select the configured preset."""
+    """Fixed buffered policy, shared by the live runner and local evaluation."""
 
-    minimum_edge: float = 0.025
-    hedge_band: int = 500
-    entry_size: int = 10
-    option_cap: int = 100
-    algorithm: str = "term_variance"
-    net_cap: int = 100
-    stock_cap: int = 10000
-    stop_loss: int = 1500
-    idle_seconds: float = 0.6
-    entry_risk_fraction: float = 1.0
+    minimum_edge: float = 0.04
+    hedge_band: int = 1200
+    entry_size: int = 100
+    option_cap: int = 1000
+    algorithm: str = "forecast_adaptive"
+    net_cap: int = 800
+    stock_cap: int = 45000
+    stop_loss: int = 6000
+    idle_seconds: float = 0.1
+    entry_risk_fraction: float = 0.75
 
 
 DEFAULT_POLICY = StrategyPolicy()
-ADAPTIVE_POLICY = StrategyPolicy(
-    minimum_edge=0.04,
-    hedge_band=1200,
-    entry_size=100,
-    option_cap=1000,
-    algorithm="maker_convergence",
-    net_cap=800,
-    stock_cap=45000,
-    stop_loss=6000,
-    idle_seconds=0.1,
-)
-LIVE_POLICIES = {
-    "baseline": DEFAULT_POLICY,
-    "adaptive_small": replace(
-        ADAPTIVE_POLICY, entry_size=10, option_cap=100, net_cap=100, stock_cap=10000, stop_loss=1500
-    ),
-    "adaptive": ADAPTIVE_POLICY,
-    "scaled_small": replace(
-        ADAPTIVE_POLICY,
-        algorithm="forecast_adaptive",
-        entry_size=10,
-        option_cap=100,
-        net_cap=100,
-        stock_cap=10000,
-        stop_loss=1500,
-    ),
-    "scaled": replace(ADAPTIVE_POLICY, algorithm="forecast_adaptive"),
-    "buffered": replace(ADAPTIVE_POLICY, algorithm="forecast_adaptive", entry_risk_fraction=0.75),
-    "buffered_small": replace(
-        ADAPTIVE_POLICY,
-        algorithm="forecast_adaptive",
-        entry_risk_fraction=0.75,
-        entry_size=10,
-        option_cap=100,
-        net_cap=100,
-        stock_cap=10000,
-        stop_loss=1500,
-    ),
-}
+LIVE_POLICIES = {"buffered": DEFAULT_POLICY}
 
 
 def hedge(client, securities, curve, tick, force=False, policy=DEFAULT_POLICY):
@@ -100,72 +60,19 @@ def hedge(client, securities, curve, tick, force=False, policy=DEFAULT_POLICY):
         stock = next(x for x in securities if x["ticker"] == "RTM")
         target = stock["position"] + quantity
         if abs(target) > policy.stock_cap:
-            if policy.algorithm == "term_variance":
-                raise TradingError("Required ETF hedge exceeds conservative share cap")
             # A price move may exhaust stock capacity. Hedge as far as permitted;
-            # the adaptive decision then reduces options instead of abandoning them.
+            # the buffered decision then reduces options instead of abandoning them.
             target = max(-policy.stock_cap, min(policy.stock_cap, target))
             quantity = target - stock["position"]
         securities = submit_change(client, securities, "RTM", quantity)
     return securities
 
 
-def _trade_once(client, securities, curve, tick, flatten=False, policy=DEFAULT_POLICY):
-    prior_stock = next(s["position"] for s in securities if s["ticker"] == "RTM")
-    securities = hedge(client, securities, curve, tick, policy=policy)
-    if prior_stock != next(s["position"] for s in securities if s["ticker"] == "RTM"):
-        return "hedged"
-    if flatten:
-        positions = [x for x in securities if x["type"] == "OPTION" and x["position"]]
-        if positions:
-            sec = positions[0]
-            securities = submit_change(client, securities, sec["ticker"], -sec["position"])
-            hedge(client, securities, curve, tick, force=True, policy=policy)
-            return "flatten_option"
-        stock = next(x for x in securities if x["ticker"] == "RTM")
-        if stock["position"]:
-            submit_change(client, securities, "RTM", -stock["position"])
-            return "flatten_stock"
-        return "flat"
-    if tick >= 270:
-        return "no_new_entries"
-    opportunities = candidates(securities, curve, tick)
-    stock = next(s for s in securities if s["ticker"] == "RTM")
-    spot = (stock["bid"] + stock["ask"]) / 2
-    for sec in securities:
-        if sec["type"] == "OPTION" and sec["position"]:
-            if should_exit(sec, spot, curve, tick):
-                securities = submit_change(client, securities, sec["ticker"], -sec["position"])
-                hedge(client, securities, curve, tick, force=True, policy=policy)
-                return "exit_edge"
-    for choice in opportunities:
-        if choice["edge"] <= policy.minimum_edge:
-            continue
-        change = policy.entry_size if choice["action"] == "BUY" else -policy.entry_size
-        if allowed(
-            securities,
-            choice["ticker"],
-            change,
-            tick,
-            curve.current,
-            curve.rate,
-            gross_cap=policy.option_cap,
-            net_cap=policy.option_cap,
-        ):
-            client.audit("signal", tick=tick, **choice)
-            securities = submit_change(client, securities, choice["ticker"], change)
-            hedge(client, securities, curve, tick, force=True, policy=policy)
-            return "entry"
-    return "hold"
-
-
 def trade_once(client, securities, curve, tick, flatten=False, policy=DEFAULT_POLICY):
     try:
-        if policy.algorithm != "term_variance":
-            from .adaptive import trade
+        from .buffered import trade
 
-            return trade(client, securities, curve, tick, flatten, policy)
-        return _trade_once(client, securities, curve, tick, flatten, policy)
+        return trade(client, securities, curve, tick, flatten, policy)
     except PartialFill as exc:
         client.entry_halted = True
         hedge(client, exc.securities, curve, tick, force=True, policy=policy)
@@ -177,12 +84,11 @@ def liquidation_start(securities, observed_cycle_seconds=0, policy=DEFAULT_POLIC
     """Budget all remaining option tickets, a stock/reconciliation cycle, and slack."""
     # Even a 100-contract entry policy closes in <=40-contract legs: closing
     # one ITM leg of an offsetting book must not create a 10,000-share delta.
-    cap = min(40, policy.entry_size) if policy.algorithm != "term_variance" else 10
+    cap = min(40, policy.entry_size)
     tickets = sum(math.ceil(abs(s["position"]) / cap) for s in securities if s["type"] == "OPTION")
-    if policy.algorithm != "term_variance":
-        tickets += sum(
-            math.ceil(abs(s["position"]) / 10000) for s in securities if s["ticker"] == "RTM"
-        )
+    tickets += sum(
+        math.ceil(abs(s["position"]) / 10000) for s in securities if s["ticker"] == "RTM"
+    )
     reserve = max(15, (tickets + 1) * max(3.0, 1.5 * observed_cycle_seconds) + 5)
     return max(0, 300 - reserve)
 
@@ -249,7 +155,7 @@ def main():
         "--strategy",
         choices=LIVE_POLICIES,
         default="buffered",
-        help="Policy (default: buffered); baseline restores the original small position limits",
+        help="Only supported volatility policy (default: buffered)",
     )
     args = parser.parse_args()
     policy = LIVE_POLICIES[args.strategy]
@@ -284,9 +190,7 @@ def main():
             "run_started",
             execution_enabled=args.trade,
             environment=cfg.get("RIT_ENVIRONMENT", "practice"),
-            strategy_revision=policy.algorithm + "-v2"
-            if policy.algorithm != "term_variance"
-            else "research-v1",
+            strategy_revision="buffered-v2",
             strategy=args.strategy,
         )
         client = client_from_config(cfg, execute=args.trade, audit=audit)
@@ -324,7 +228,8 @@ def main():
                         "Existing positions found; initial run requires a flat account"
                     )
                 try:
-                    curve = VolatilityCurve.from_news(client.get("news"), tick)
+                    news = client.get("news")
+                    curve = VolatilityCurve.from_news(news, tick)
                 except ValueError:
                     if any(s["position"] for s in securities):
                         raise
@@ -354,10 +259,6 @@ def main():
                     or time.monotonic() - start >= args.max_seconds
                 )
                 signals = candidates(securities, curve, tick)
-                if policy.algorithm != "term_variance":
-                    from .adaptive import signals as adaptive_signals
-
-                    signals = adaptive_signals(securities, curve, tick, policy)
                 audit(
                     "snapshot",
                     tick=tick,

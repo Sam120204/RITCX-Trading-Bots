@@ -253,14 +253,15 @@ class MockStressTests(unittest.TestCase):
         self.assertTrue(report["positions_at_error"])
         self.assertTrue(report["settled_positions"])
 
-    def test_demo_replays_previous_result_and_half_size_limits_inventory(self):
+    def test_buffered_demo_is_deterministic_and_respects_inventory_cap(self):
         from ritcx.mock_engine import run_heat
 
-        baseline = run_heat(7, "demo")
-        smaller = run_heat(7, "demo", policy_name="half_size")
-        self.assertAlmostEqual(baseline["pnl"], 4218.161749434879)
-        self.assertLessEqual(smaller["max_gross_options"], 50)
-        self.assertGreater(smaller["orders"], 0)
+        first = run_heat(7, "demo")
+        second = run_heat(7, "demo")
+        self.assertEqual(first, second)
+        self.assertEqual(first["policy"], "buffered")
+        self.assertLessEqual(first["max_gross_options"], 1000)
+        self.assertGreater(first["orders"], 0)
 
 
 if __name__ == "__main__":

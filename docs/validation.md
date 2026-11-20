@@ -1,5 +1,7 @@
 # Validation record — November 17, 2026
 
+> Historical report. Buffered is now the only supported volatility strategy; commands or alternatives described below refer to earlier revisions. Use the current README for runnable instructions.
+
 This record separates correctness checks, historical observations, and unverified strategy performance.
 
 ## Current implementation
