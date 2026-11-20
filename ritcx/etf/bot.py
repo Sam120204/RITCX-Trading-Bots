@@ -1,4 +1,4 @@
-"""Depth-aware tender and basket bot for the simulated RITCx ETF case."""
+"""Tender-first NAV glide bot for the simulated RITCx ETF case."""
 
 import argparse
 import json
@@ -19,15 +19,8 @@ from ..runtime import (
     read_config,
     validate_profile,
 )
-from .execution import (
-    ETFClient,
-    accept_and_unwind,
-    basket_trade,
-    external_book,
-    hedge_fx,
-    unwind_all,
-)
-from .model import basket_opportunities, execution_value, tender_opportunity
+from .execution import ETFClient, unwind_all
+from .glide import Glide
 
 EQUITIES = ("BULL", "BEAR", "RITC")
 
@@ -90,13 +83,27 @@ def main():
     parser.add_argument("--lock-fd", type=int, help=argparse.SUPPRESS)
     parser.add_argument("--watch", action="store_true")
     parser.add_argument(
-        "--passive-tenders",
+        "--dry-run", action="store_true", help="Observe a heat without submitting orders"
+    )
+    parser.add_argument(
+        "--hold-to-close",
         action="store_true",
-        help="Try bounded passive tender exits before crossing the spread",
+        help="Expensive-exit fallback: hold selective tenders for settlement",
+    )
+    parser.add_argument(
+        "--loss-limit-cad",
+        type=float,
+        help="Optional heat loss trigger for early liquidation (previous policy: 2500)",
     )
     parser.add_argument("--no-baskets", action="store_true", help="Trade tenders only")
     parser.add_argument("--max-seconds", type=float, default=420)
     args = parser.parse_args()
+    if args.loss_limit_cad is not None and not 0 < args.loss_limit_cad < float("inf"):
+        parser.error("--loss-limit-cad requires a positive finite amount")
+    if args.dry_run and args.trade:
+        parser.error("--dry-run and --trade are mutually exclusive")
+    if args.dry_run:
+        args.watch = True
     cfg = read_config(args.config)
     try:
         validate_profile(cfg, args.practice, args.contest, args.trade)
@@ -117,8 +124,14 @@ def main():
         open_audit_log(logdir, "etf") as (log, out),
         ThreadPoolExecutor(max_workers=6) as pool,
     ):
+        rate_limits = 0
 
         def audit(event, **data):
+            nonlocal rate_limits
+            if event == "rate_limited" or (
+                event == "request_rejected" and data.get("http_status") == 429
+            ):
+                rate_limits += 1
             row = dict(time=datetime.now(timezone.utc).isoformat(), event=event, **data)
             text = json.dumps(row, allow_nan=False)
             out.write(text + "\n")
@@ -129,7 +142,9 @@ def main():
             "run_started",
             execution_enabled=args.trade,
             environment=cfg.get("RIT_ENVIRONMENT", "practice"),
-            strategy_revision="research-v1",
+            strategy_revision="tender-first-glide",
+            hold_to_close=args.hold_to_close,
+            loss_limit_cad=args.loss_limit_cad,
         )
         client = client_from_config(cfg, execute=args.trade, audit=audit, client_type=ETFClient)
         client.trader_id = cfg["RIT_USERNAME"]
@@ -137,22 +152,27 @@ def main():
         last_tick = None
         first_period = None
         initial_pnl = None
-        checked = set()
+        final_trader = None
+        glide = Glide(hold_to_close=args.hold_to_close)
         liquidating = False
         try:
             while time.monotonic() - started < args.max_seconds + 20:
                 read_start = time.perf_counter()
-                state = read_many(
-                    client, pool, ["case", "securities", "trader", "tenders", "orders?status=OPEN"]
-                )
-                case = state["case"]
-                securities = state["securities"]
+                case = client.get("case")
                 tick = case["tick"]
                 if case["name"] != "RITCx - Algorithmic ETF Arbitrage Case":
                     audit("case_changed", case=case)
+                    if args.trade and last_tick is not None:
+                        raise TradingError("Case changed before settlement was confirmed")
                     break
-                if last_tick is not None and (tick < last_tick or case["period"] != first_period):
+                if (
+                    case["status"] == "ACTIVE"
+                    and last_tick is not None
+                    and (tick < last_tick or case["period"] != first_period)
+                ):
                     audit("round_reset", case=case)
+                    if args.trade:
+                        raise TradingError("Heat reset before settlement was confirmed")
                     break
                 if case["status"] != "ACTIVE":
                     audit("case_inactive", case=case)
@@ -160,12 +180,24 @@ def main():
                         break
                     time.sleep(0.5)
                     continue
+                if (
+                    tick == last_tick
+                    and not stopping
+                    and time.monotonic() - started < args.max_seconds
+                ):
+                    time.sleep(0.10)
+                    continue
+                client.bind_snapshot(case)
+                glide.finish_resting(client)
+                state = read_many(
+                    client, pool, ["securities", "trader", "tenders", "orders?status=OPEN"]
+                )
+                securities = state["securities"]
                 if state["orders?status=OPEN"]:
                     raise TradingError("Open orders found; reconcile before continuing")
                 if last_tick is None:
                     first_period = case["period"]
                     client.bind_heat(case)
-                    validate(case, securities, client.get("limits"))
                     if args.trade and any(
                         abs(x["position"]) >= (1 if x["ticker"] == "USD" else 1e-9)
                         for x in securities
@@ -173,161 +205,92 @@ def main():
                     ):
                         raise TradingError("Initial ETF run requires flat equity positions")
                     initial_pnl = state["trader"]["nlv"]
-                validate(case, securities, client.get("limits"))
+                limits = client.get("limits")
+                validate(case, securities, limits)
+                if last_tick is None:
+                    audit(
+                        "etf_contracts",
+                        horizon=glide.horizon,
+                        gamma=glide.gamma,
+                        limits=limits,
+                        securities=[
+                            {
+                                k: sec.get(k)
+                                for k in (
+                                    "ticker",
+                                    "trading_fee",
+                                    "limit_order_rebate",
+                                    "max_trade_size",
+                                    "limits",
+                                )
+                            }
+                            for sec in securities
+                        ],
+                    )
                 client.bind_snapshot(case)
-                byname = {x["ticker"]: x for x in securities}
                 liquidating = (
                     liquidating
                     or getattr(client, "entry_halted", False)
                     or stopping
-                    or tick >= 275
-                    or state["trader"]["nlv"] - initial_pnl <= -2500
+                    or (
+                        args.loss_limit_cad is not None
+                        and state["trader"]["nlv"] - initial_pnl <= -args.loss_limit_cad
+                    )
                     or time.monotonic() - started >= args.max_seconds
                 )
                 positions = {x["ticker"]: x["position"] for x in securities if x["position"]}
                 books = get_books(client, pool)
-                signals = [] if args.no_baskets else basket_opportunities(books, securities, 500)
-                tenders = []
-                for tender in state["tenders"]:
-                    if tender["tender_id"] not in checked:
-                        offer = tender_opportunity(
-                            tender,
-                            books["RITC"],
-                            securities,
-                            tick,
-                            fx_book=books["USD"],
-                            seconds_per_slice=max(
-                                1.5, 4 * max(client.order_latencies[-20:], default=0)
-                            ),
-                            passive_seconds=0.75 if args.passive_tenders else 0,
-                        )
-                        side = "SELL" if tender["action"] == "BUY" else "BUY"
-                        depth = execution_value(books["RITC"], side, tender["quantity"])
-                        fee = byname["RITC"]["trading_fee"] * tender["quantity"]
-                        estimated_profit = (
-                            None
-                            if depth is None
-                            else (
-                                (depth[0] - tender["price"] * tender["quantity"])
-                                * (1 if tender["action"] == "BUY" else -1)
-                                - fee
-                            )
-                        )
-                        audit(
-                            "tender_evaluation",
-                            tender=tender,
-                            decision=offer,
-                            complete_book_liquidity=depth is not None,
-                            estimated_profit_usd=estimated_profit,
-                            minimum_profit_usd=max(500, 0.08 * tender["quantity"]),
-                        )
-                        if offer:
-                            tenders.append((offer, tender))
                 audit(
                     "snapshot",
                     tick=tick,
                     trader=state["trader"],
                     positions=positions,
-                    best=signals[:1],
                     snapshot_latency_ms=round(1000 * (time.perf_counter() - read_start), 2),
                     liquidating=liquidating,
                 )
-                if not args.trade:
-                    if not args.watch or stopping:
-                        break
-                else:
-                    fresh = client.get("case")
-                    if (
+                if args.trade and liquidating:
+                    unwind_all(client, securities)
+                    audit("finished_flat", **confirm_flat(client))
+                    break
+                fresh = client.get("case")
+                if (
+                    fresh["name"] != case["name"]
+                    or fresh["status"] != "ACTIVE"
+                    or fresh["period"] != case["period"]
+                    or fresh["tick"] < tick
+                ):
+                    audit("case_changed_before_trade", case=fresh)
+                    if args.trade and (
                         fresh["name"] != case["name"]
-                        or fresh["status"] != "ACTIVE"
                         or fresh["period"] != case["period"]
-                        or fresh["tick"] < tick
+                        or (fresh["status"] == "ACTIVE" and fresh["tick"] < tick)
                     ):
-                        audit("case_changed_before_trade", case=fresh)
+                        raise TradingError("Heat changed before settlement was confirmed")
+                    break
+                if tick >= 297:
+                    if not args.trade and (not args.watch or stopping):
                         break
-                    if fresh["tick"] - tick > 2:
-                        audit("stale_snapshot", tick=tick)
-                        continue
-                    if liquidating:
-                        securities = unwind_all(client, securities)
-                        if (
-                            not any(x["position"] for x in securities if x["ticker"] in EQUITIES)
-                            and abs(next(x["position"] for x in securities if x["ticker"] == "USD"))
-                            < 1
-                        ):
-                            audit(
-                                "finished_flat",
-                                trader=client.get("trader"),
-                                positions={
-                                    x["ticker"]: x["position"] for x in securities if x["position"]
-                                },
-                            )
-                            break
-                    else:
-                        q = int(byname["RITC"]["position"])
-                        basket_consistent = (
-                            byname["BULL"]["position"] == -q and byname["BEAR"]["position"] == -q
-                        )
-                        if not basket_consistent:
-                            raise TradingError("Unexpected inventory outside an ETF basket")
-                        gap = (byname["RITC"]["bid"] + byname["RITC"]["ask"]) / 2 * (
-                            byname["USD"]["bid"] + byname["USD"]["ask"]
-                        ) / 2 - (
-                            byname["BULL"]["bid"]
-                            + byname["BULL"]["ask"]
-                            + byname["BEAR"]["bid"]
-                            + byname["BEAR"]["ask"]
-                        ) / 2
-                        if q and (1 if q > 0 else -1) * gap >= -0.03:
-                            audit("basket_exit", gap=gap, quantity=q)
-                            basket_trade(client, securities, -1 if q > 0 else 1, min(abs(q), 500))
-                        elif q == 0 and tenders and tick < 250:
-                            offer, tender = max(tenders, key=lambda x: x[0]["profit_usd"])
-                            # Re-evaluate the offer on a fresh book and tick before acceptance.
-                            check = client.get("case")
-                            book = external_book(client, "RITC")
-                            fx_book = external_book(client, "USD")
-                            securities = client.get("securities")
-                            latest = tender_opportunity(
-                                tender,
-                                book,
-                                securities,
-                                check["tick"],
-                                fx_book=fx_book,
-                                seconds_per_slice=max(
-                                    1.5, 4 * max(client.order_latencies[-20:], default=0)
-                                ),
-                                passive_seconds=0.75 if args.passive_tenders else 0,
-                            )
-                            client.bind_snapshot(check)
-                            if (
-                                latest
-                                and check["name"] == case["name"]
-                                and check["status"] == "ACTIVE"
-                                and check["period"] == case["period"]
-                            ):
-                                checked.add(tender["tender_id"])
-                                audit("tender_signal", **latest)
-                                accept_and_unwind(
-                                    client, tender, securities, passive=args.passive_tenders
-                                )
-                        elif (
-                            signals
-                            and tick < 260
-                            and abs(q) < 5000
-                            and (q == 0 or q * signals[0]["direction"] > 0)
-                        ):
-                            signal_ = signals[0]
-                            audit("basket_signal", **signal_)
-                            basket_trade(client, securities, signal_["direction"], 500)
-                        else:
-                            hedge_fx(client, securities)
+                    last_tick = tick
+                    time.sleep(0.15)
+                    continue
+                if fresh["tick"] - tick > 2:
+                    audit("stale_snapshot", tick=tick)
+                    continue
+                glide.cycle(
+                    client, case, securities, books, state["tenders"], no_baskets=args.no_baskets
+                )
+                if not args.trade and (not args.watch or stopping):
+                    break
                 last_tick = tick
                 time.sleep(0.15)
             else:
                 raise TradingError("Operating deadline exceeded; inspect positions")
             if args.trade:
-                audit("final_reconciliation", **confirm_flat(client))
+                # The exchange cancels remaining orders and settles inventory at natural expiry.
+                # Reconciliation reads the account, including when no settlement was observed.
+                final = confirm_flat(client)
+                final_trader = final["trader"]
+                audit("final_reconciliation", **final)
         except (TradingError, ValueError, KeyError) as exc:
             audit("stopped", reason=str(exc))
             try:
@@ -345,6 +308,18 @@ def main():
             except TradingError:
                 audit("reconciliation_unavailable")
             return 1
+        finally:
+            audit(
+                "heat_summary",
+                **glide.summary(client),
+                rate_limited_responses=rate_limits,
+                pnl_cad=(
+                    final_trader["nlv"] - initial_pnl
+                    if final_trader is not None and initial_pnl is not None
+                    else None
+                ),
+                total_fines=final_trader.get("total_fines") if final_trader else None,
+            )
         audit("log_saved", path=str(log))
     return 0
 

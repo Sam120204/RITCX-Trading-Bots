@@ -62,7 +62,7 @@ Loss thresholds trigger closing; they are not guaranteed maximum losses. Larger 
 
 ## Simulation methods
 
-The original `standard` and `stress` scenarios are sensitivity tests, not reconstructions of the official market. They assume larger forecast errors, a maker that prices future variance and mean-reverts unknown volatility, additional order delays, and geometric returns. Their losses cannot establish that the strategy is bad under the published case. The older results are retained in `docs/mock-evaluation.md` and their immutable reports.
+The original `standard` and `stress` scenarios are sensitivity tests, not reconstructions of the official market. They assume larger forecast errors, a maker that prices future variance and mean-reverts unknown volatility, additional order delays, and geometric returns. Their losses cannot establish that the strategy is bad under the published case. The older results are retained in `docs/archive/mock-evaluation.md` and their immutable reports.
 
 New scenarios `case`, `case_fast`, and `case_latency` use arithmetic normal returns, announced weekly sigma, forecasts at ticks 37/112/187, current-week updates at 76/151/226 (initial news available at tick 0), fixed two-cent spreads, immediate full fills at arrival, fees, limits, and delta fines. The maker's quote sigma converges toward the latest announced sigma. Unreleased future truth does not affect quotes.
 
@@ -128,9 +128,9 @@ The pilot reports used earlier code and seeds; their provisional held-out labels
 
 Final per-heat evidence:
 
-- [360 case-based runs](../reports/volatility-scaled-case-evaluation-2026-11-19.json) (case, faster maker, higher request latency).
-- [240 sensitivity runs](../reports/volatility-scaled-sensitivity-evaluation-2026-11-19.json) (standard, stress).
-- [Research and verification audit](../reports/volatility-research-audit-2026-11-19.json).
+- [360 case-based runs](../../reports/volatility-scaled-case-evaluation-2026-11-19.json) (case, faster maker, higher request latency).
+- [240 sensitivity runs](../../reports/volatility-scaled-sensitivity-evaluation-2026-11-19.json) (standard, stress).
+- [Research and verification audit](../../reports/volatility-research-audit-2026-11-19.json).
 
 ## Monitored 300-second run
 

@@ -18,6 +18,7 @@ class RunnerCLITests(unittest.TestCase):
     def test_runner_passes_profile_and_account_lock_to_real_child_and_finishes_flat(self):
         started = time.monotonic()
         posts = []
+        case_reads = 0
         sec = securities()
         prices = {"CAD": 1, "USD": 1, "BULL": 10, "BEAR": 15, "RITC": 25}
         for s in sec:
@@ -33,15 +34,20 @@ class RunnerCLITests(unittest.TestCase):
                 self.wfile.write(json.dumps(value).encode())
 
             def do_GET(self):
+                nonlocal case_reads
                 path = urlsplit(self.path)
                 ep = path.path.removeprefix("/v1/")
                 if ep == "case":
+                    case_reads += 1
+                    if case_reads == 2:
+                        self.send_error(401)
+                        return
                     return self.answer(
                         dict(
                             name="RITCx - Algorithmic ETF Arbitrage Case",
                             period=1,
-                            tick=10 if time.monotonic() - started < 1.5 else 275,
-                            status="ACTIVE",
+                            tick=10 if time.monotonic() - started < 3 else 275,
+                            status="STOPPED" if case_reads == 1 else "ACTIVE",
                             ticks_per_period=300,
                             total_periods=1,
                         )
@@ -118,6 +124,7 @@ class RunnerCLITests(unittest.TestCase):
                 )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertIn("STARTING", result.stdout)
+            self.assertIn("temporarily rejected the case status", result.stdout)
             self.assertIn("finished_flat", result.stdout)
             self.assertIn("HEAT_FINISHED", result.stdout)
             self.assertIn('"completed": 1', result.stdout)

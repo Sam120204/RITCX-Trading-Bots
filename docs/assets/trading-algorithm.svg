@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1880" viewBox="0 0 2400 1880" role="img" aria-labelledby="title desc">
 <title id="title">RITCxUofT trading algorithm logic</title>
-<desc id="desc">Connect and preflight, wait for a supported active 300-second heat, then select volatility or ETF trading. Volatility uses analyst forecasts, Black–Scholes edge selection and delta hedging. ETF trading evaluates full tenders or executable baskets. Shared risk checks, fill reconciliation and recovery govern all orders. Positions are closed and reconciled before another heat. Passive tender exits are optional; parity is diagnostic; converters are manual-only.</desc>
+<desc id="desc">Connect and preflight, wait for a supported active 300-second heat, then select volatility or ETF trading. Volatility uses analyst forecasts, Black–Scholes edge selection and delta hedging. ETF trading evaluates full tenders or executable baskets. Shared risk checks, fill reconciliation and recovery govern all orders. Positions are closed and reconciled before another heat. Passive limits work alongside NAV-timed market clips; parity is diagnostic; converters are manual-only.</desc>
 <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 Z" fill="#52667A"/></marker><filter id="shadow" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#17324D" flood-opacity="0.065"/></filter></defs>
 <rect x="0" y="0" width="2400" height="1880" rx="0" fill="#F3F6FA" stroke="none" stroke-width="2" />
 <rect x="0" y="0" width="2400" height="248" rx="0" fill="#14263D" stroke="none" stroke-width="2" />
@@ -78,18 +78,18 @@
 <rect x="1784" y="732" width="492" height="428" rx="16" fill="#F4F6FD" stroke="#DCE3F5" stroke-width="2" />
 <text x="1298" y="783" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" fill="#3858C9" text-anchor="start">PRIVATE TENDERS</text>
 <text x="1814" y="783" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" fill="#3858C9" text-anchor="start">ETF–BASKET SPREAD</text>
-<text x="1298" y="834" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700" fill="#183149" text-anchor="start">Value the entire quantity</text>
+<text x="1298" y="834" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700" fill="#183149" text-anchor="start">Blend ETF mid and basket NAV</text>
 <text x="1814" y="834" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700" fill="#183149" text-anchor="start">Use executable prices</text>
 <circle cx="1304" cy="871" r="5" fill="#3858C9"/>
-<text x="1324" y="879" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="400" fill="#52667A" text-anchor="start">80% of displayed depth</text>
+<text x="1324" y="879" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="400" fill="#52667A" text-anchor="start">Walk one scheduled exit clip</text>
 <circle cx="1304" cy="912" r="5" fill="#3858C9"/>
-<text x="1324" y="920" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="400" fill="#52667A" text-anchor="start">Fees + FX liquidity</text>
+<text x="1324" y="920" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="400" fill="#52667A" text-anchor="start">Include fees, rebate and drift</text>
 <circle cx="1304" cy="953" r="5" fill="#3858C9"/>
 <text x="1324" y="961" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="400" fill="#52667A" text-anchor="start">Cash + position capacity</text>
 <circle cx="1304" cy="994" r="5" fill="#3858C9"/>
-<text x="1324" y="1002" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="400" fill="#52667A" text-anchor="start">Time to finish the unwind</text>
+<text x="1324" y="1002" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="400" fill="#52667A" text-anchor="start">Require 0.03 USD/share net</text>
 <circle cx="1820" cy="871" r="5" fill="#3858C9"/>
-<text x="1840" y="879" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="400" fill="#52667A" text-anchor="start">Walk all equity books</text>
+<text x="1840" y="879" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="400" fill="#52667A" text-anchor="start">Size to the three equity touches</text>
 <circle cx="1820" cy="912" r="5" fill="#3858C9"/>
 <text x="1840" y="920" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="400" fill="#52667A" text-anchor="start">Price the full FX notional</text>
 <circle cx="1820" cy="953" r="5" fill="#3858C9"/>
@@ -99,14 +99,14 @@
 <path d="M1298,1040 H1718" fill="none" stroke="#D3DBEF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M1814,1040 H2246" fill="none" stroke="#D3DBEF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="1298" y="1084" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#183149" text-anchor="start">Accept only if qualified</text>
-<text x="1298" y="1125" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="400" fill="#52667A" text-anchor="start">Exit in fresh, depth-aware slices</text>
+<text x="1298" y="1125" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="400" fill="#52667A" text-anchor="start">Work inventory over 30 ticks</text>
 <text x="1814" y="1084" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" fill="#183149" text-anchor="start">Enter a small hedged basket</text>
-<text x="1814" y="1125" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="400" fill="#52667A" text-anchor="start">Manage basis + USD exposure</text>
+<text x="1814" y="1125" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="400" fill="#52667A" text-anchor="start">Hedge USD cash beyond 20,000</text>
 <rect x="1268" y="1182" width="1008" height="70" rx="14" fill="#EDF1FA" stroke="none" stroke-width="2" />
 <text x="1292" y="1226" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="600" fill="#183149" text-anchor="start">Known partial fill → cancel remainder, unwind actual inventory</text>
 <rect x="1268" y="1283" width="465" height="40" rx="20" fill="#EAF0FC" stroke="none" stroke-width="2" />
-<text x="1286" y="1310" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#3858C9" text-anchor="start" letter-spacing="0.4">PASSIVE TENDER EXITS  ·  OPTIONAL</text>
-<text x="1760" y="1310" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="400" fill="#52667A" text-anchor="start">Brief limit attempt → market urgency</text>
+<text x="1286" y="1310" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#3858C9" text-anchor="start" letter-spacing="0.4">NAV-TIMED TENDER EXITS</text>
+<text x="1760" y="1310" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="400" fill="#52667A" text-anchor="start">One resting limit and market clips</text>
 <path d="M628,1362 V1390 H1200 V1420" fill="none" stroke="#52667A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
 <path d="M1768,1362 V1390 H1200" fill="none" stroke="#52667A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
 <circle cx="1200" cy="1390" r="5" fill="#52667A"/>
@@ -127,13 +127,13 @@
 <path d="M1200,1634 L1200,1660" fill="none" stroke="#52667A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
 <rect x="80" y="1674" width="1096" height="140" rx="20" fill="white" stroke="#D8E2EC" stroke-width="2" />
 <rect x="1224" y="1674" width="1096" height="140" rx="20" fill="white" stroke="#D8E2EC" stroke-width="2" />
-<text x="112" y="1721" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#183149" text-anchor="start">04   Close before the deadline</text>
+<text x="112" y="1721" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#183149" text-anchor="start">04   Finish the heat</text>
 <text x="112" y="1763" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="400" fill="#52667A" text-anchor="start">Volatility: at or before 285, adapted to inventory + latency</text>
-<text x="112" y="1792" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="400" fill="#52667A" text-anchor="start">ETF: begin close-out at 275  ·  Stop requests also trigger closing</text>
+<text x="112" y="1792" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="400" fill="#52667A" text-anchor="start">ETF: settle residual inventory at expiry; flatten on a stop request</text>
 <text x="1256" y="1721" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#183149" text-anchor="start">Reconcile → log → next heat</text>
 <text x="1256" y="1763" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="400" fill="#52667A" text-anchor="start">Flat account + no open orders → finish or wait for the next heat</text>
 <text x="1256" y="1792" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="400" fill="#52667A" text-anchor="start">Unresolved exposure → stop for review</text>
 <path d="M1188,1738 L1212,1738" fill="none" stroke="#52667A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
-<text x="80" y="1848" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="400" fill="#52667A" text-anchor="start">No automated converters  ·  Parity is diagnostic  ·  Passive execution is opt-in</text>
+<text x="80" y="1848" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="400" fill="#52667A" text-anchor="start">No automated converters  ·  Parity is diagnostic  ·  Tender exits use resting limit orders</text>
 <text x="2320" y="1848" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#52667A" text-anchor="end" letter-spacing="1.2">IMPLEMENTED LOGIC  /  v0.2.0</text>
 </svg>

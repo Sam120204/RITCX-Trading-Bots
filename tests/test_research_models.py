@@ -29,52 +29,55 @@ class ETFResearchTests(unittest.TestCase):
         books["USD"]["bids"] = [level(1.3, 9999)]
         self.assertEqual(etf.basket_opportunities(books, securities(), 500), [])
 
-    def test_tender_needs_time_to_unwind_all_slices(self):
-        tender = dict(
+    def test_late_tender_requires_larger_edge_for_settlement(self):
+        t = dict(
             tender_id=1,
             ticker="RITC",
             quantity=100000,
             action="BUY",
-            price=20,
+            price=24.91,
             is_fixed_bid=True,
-            expires=260,
+            expires=300,
         )
-        book = {"bids": [level(21, 200000)], "asks": []}
-        self.assertIsNone(
-            etf.tender_opportunity(tender, book, securities(), 249, seconds_per_slice=3)
-        )
+        book = {"bids": [level(24.98, 10000)], "asks": []}
+        offer = etf.tender_opportunity(t, book, securities(), 286)
+        self.assertEqual(offer["verdict"], "pass")
+        self.assertEqual(offer["exit_cost_usd"], 0)
+        self.assertEqual(offer["bar_usd"], 0.10)
+        self.assertIsNone(etf.tender_opportunity(t, book, securities(), 297))
 
     def test_tender_reserves_purchase_cash_before_acceptance(self):
         sec = securities()
         sec[1]["position"] = -7000000
-        tender = dict(
+        t = dict(
             tender_id=1,
             ticker="RITC",
             quantity=100000,
             action="BUY",
-            price=20,
+            price=24.80,
             is_fixed_bid=True,
             expires=100,
         )
-        self.assertIsNone(
-            etf.tender_opportunity(tender, {"bids": [level(21, 200000)], "asks": []}, sec, 20)
-        )
+        offer = etf.tender_opportunity(t, {"bids": [level(24.98, 200000)], "asks": []}, sec, 20)
+        self.assertEqual(offer["verdict"], "blocked")
 
-    def test_tender_depth_haircut_rejects_fragile_full_book(self):
-        tender = dict(
+    def test_thin_book_uses_cost_allowance_and_invalid_fx_skips_offer(self):
+        sec = securities()
+        t = dict(
             tender_id=1,
             ticker="RITC",
             quantity=10000,
             action="BUY",
-            price=20,
+            price=24.92,
             is_fixed_bid=True,
             expires=100,
         )
-        self.assertIsNone(
-            etf.tender_opportunity(
-                tender, {"bids": [level(21, 10000)], "asks": []}, securities(), 20
-            )
-        )
+        book = {"bids": [level(24.98, 50)], "asks": []}
+        offer = etf.tender_opportunity(t, book, sec, 20)
+        self.assertAlmostEqual(offer["exit_cost_usd"], 0.055)
+        self.assertEqual(offer["verdict"], "pass")
+        sec[1]["bid"] = 0
+        self.assertIsNone(etf.tender_opportunity(t, book, sec, 20))
 
     def test_malformed_book_and_action_are_rejected(self):
         for book, action in [

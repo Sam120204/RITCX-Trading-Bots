@@ -57,7 +57,7 @@ with an injected request rejection; failures are not excluded by the evaluator.
 
 Full per-heat outcomes, paired statistics, scenario parameters, policy settings,
 and source fingerprints are in
-[`reports/volatility-stress-evaluation-2026-11-19.json`](../reports/volatility-stress-evaluation-2026-11-19.json).
+[`reports/volatility-stress-evaluation-2026-11-19.json`](../../reports/volatility-stress-evaluation-2026-11-19.json).
 
 ## Interpretation
 

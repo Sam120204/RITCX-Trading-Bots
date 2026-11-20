@@ -4,14 +4,13 @@ import itertools
 import math
 
 EQUITIES = ("BULL", "BEAR", "RITC")
+GLIDE_HORIZON = 30
 
 
-def execution_value(book, action, quantity, depth_fraction=1.0):
+def execution_value(book, action, quantity):
     """Return (total quote-currency value, worst price), or None if depth is short."""
     if action not in ("BUY", "SELL") or not math.isfinite(quantity):
         raise ValueError("Invalid action or quantity")
-    if not 0 < depth_fraction <= 1:
-        raise ValueError("Depth fraction must lie in (0, 1]")
     if quantity <= 0:
         return None
     levels = book["asks" if action == "BUY" else "bids"]
@@ -21,7 +20,7 @@ def execution_value(book, action, quantity, depth_fraction=1.0):
             raise ValueError("Nonfinite or negative order-book data")
     remaining, value = quantity, 0.0
     for level in sorted(levels, key=lambda x: x["price"], reverse=action == "SELL"):
-        available = max(0, level["quantity"] - level.get("quantity_filled", 0)) * depth_fraction
+        available = max(0, level["quantity"] - level.get("quantity_filled", 0))
         take = min(remaining, available)
         value += take * level["price"]
         remaining -= take
@@ -92,68 +91,81 @@ def basket_allowed(securities, direction, quantity, **risk_caps):
     )
 
 
+def quotes(securities):
+    byname = {s["ticker"]: s for s in securities}
+    mids = {}
+    for ticker in (*EQUITIES, "USD"):
+        bid, ask = byname[ticker].get("bid"), byname[ticker].get("ask")
+        if not all(isinstance(p, (float, int)) and math.isfinite(p) for p in (bid, ask)):
+            return None
+        if not 0 < bid <= ask:
+            return None
+        mids[ticker] = (bid + ask) / 2
+    return mids["RITC"], (mids["BULL"] + mids["BEAR"]) / mids["USD"]
+
+
+def tender_inventory(securities):
+    pos = {s["ticker"]: s["position"] for s in securities}
+    if pos["BULL"] != pos["BEAR"]:
+        raise ValueError("Unbalanced basket legs; reconcile before trading")
+    return int(pos["RITC"] + pos["BULL"])
+
+
 def tender_opportunity(
-    tender,
-    book,
-    securities,
-    tick,
-    *,
-    fx_book=None,
-    seconds_per_slice=1.5,
-    passive_seconds=0,
-    depth_fraction=0.8,
+    tender, book, securities, tick, *, horizon=GLIDE_HORIZON, hold_to_close=False
 ):
+    """Compute a fixed-price tender decision, including the signed inventory offset."""
+    quantity, price = tender.get("quantity"), tender.get("price")
     if (
         not tender.get("is_fixed_bid")
-        or tender["ticker"] != "RITC"
-        or tender["expires"] - tick < 2
-        or tick >= 250
-    ):
-        return None
-    quantity, price = tender["quantity"], tender["price"]
-    if (
-        not all(math.isfinite(x) for x in (quantity, price))
-        or quantity != int(quantity)
+        or tender.get("ticker") != "RITC"
+        or tender.get("action") not in ("BUY", "SELL")
+        or not isinstance(quantity, (float, int))
         or not 0 < quantity <= 100000
+        or int(quantity) != quantity
+        or not isinstance(price, (float, int))
+        or not math.isfinite(price)
         or price <= 0
+        or tender["expires"] - tick < 2
+        or tick >= 297
     ):
         return None
-    action = tender["action"]
-    if action not in ("BUY", "SELL"):
+    prices = quotes(securities)
+    if prices is None:
         return None
-    required_seconds = math.ceil(quantity / 10000) * (seconds_per_slice + passive_seconds) + 8
-    if tick + required_seconds >= 275:
-        return None
-    change = quantity if action == "BUY" else -quantity
-    projected = project_positions(securities, {"RITC": change}, {"RITC": price}, charge_fees=False)
-    if not within_risk(projected, {}):
-        return None
-    unwind = "SELL" if action == "BUY" else "BUY"
-    execution = execution_value(book, unwind, quantity, depth_fraction)
-    if execution is None:
-        return None
-    total, worst = execution
-    fee = next(x["trading_fee"] for x in securities if x["ticker"] == "RITC")
-    profit = (total - price * quantity) * (1 if action == "BUY" else -1) - fee * quantity
-    if profit < max(500, 0.08 * quantity):
-        return None
-    # Both cash extremes matter, including the state after the unwind.
-    after_exit = project_positions(projected, {"RITC": -change}, {"RITC": total / quantity})
-    if not within_risk(after_exit, {}):
-        return None
-    fx = execution_value(fx_book, "SELL", profit) if fx_book is not None else None
-    if fx_book is not None and fx is None:
-        return None
+    mid, nav = prices
+    etf = next(s for s in securities if s["ticker"] == "RITC")
+    sign = 1 if tender["action"] == "BUY" else -1
+    offset = min(quantity, max(0, -sign * tender_inventory(securities)))
+    added = quantity - offset
+    clip = min(max(added or quantity, 60000) / horizon, etf["max_trade_size"])
+    execution = execution_value(book, "SELL" if sign > 0 else "BUY", clip)
+    half = (etf["ask"] - etf["bid"]) / 2
+    taker = (abs(mid - execution[0] / clip) if execution else half + 0.03) + etf["trading_fee"]
+    maker = max(0, half - 0.01) - etf.get("limit_order_rebate", 0)
+    cost = ((maker + taker) / 2 + 0.02) * (added - offset) / quantity
+    bar = 0.03
+    if hold_to_close or (tick >= 285 and added > 0):
+        cost, bar = 0, 0.08 if hold_to_close else 0.10
+    fair = (mid + nav) / 2
+    edge = sign * (fair - price) - cost
+    projected = project_positions(
+        securities, {"RITC": sign * quantity}, {"RITC": price}, charge_fees=False
+    )
+    verdict = "pass" if edge < bar - 1e-9 else "take" if within_risk(projected, {}) else "blocked"
     return dict(
         tender_id=tender["tender_id"],
         quantity=int(quantity),
-        action=action,
-        unwind_action=unwind,
-        profit_usd=profit,
-        profit_cad=fx[0] if fx else None,
-        worst_price=worst,
-        required_seconds=required_seconds,
-        depth_fraction=depth_fraction,
+        action=tender["action"],
+        price=price,
+        mid=mid,
+        nav=nav,
+        fair=fair,
+        exit_cost_usd=cost,
+        bar_usd=bar,
+        edge_usd=edge,
+        profit_usd=edge * quantity,
+        verdict=verdict,
     )
 
 
@@ -180,8 +192,8 @@ def basket_opportunities(books, securities, quantity):
             + byname["BEAR"]["trading_fee"]
             + byname["RITC"]["trading_fee"] * rate
         )
-        edge = (raw - 2 * fee) / quantity
-        if edge > 0.15:
+        edge = (raw - fee) / quantity
+        if edge >= 0.06 - 1e-9:
             result.append(
                 dict(
                     direction=direction,

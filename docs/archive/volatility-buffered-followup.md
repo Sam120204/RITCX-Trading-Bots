@@ -92,6 +92,6 @@ Read-only official-practice preflight passed for buffered; the server remained S
 
 Evidence:
 
-- [240 case-based runs](../reports/volatility-buffered-case-evaluation-2026-11-19.json)
-- [160 sensitivity runs](../reports/volatility-buffered-sensitivity-evaluation-2026-11-19.json)
-- [Original-seed replay and fee attribution](../reports/volatility-buffered-replay-2026-11-19.json)
+- [240 case-based runs](../../reports/volatility-buffered-case-evaluation-2026-11-19.json)
+- [160 sensitivity runs](../../reports/volatility-buffered-sensitivity-evaluation-2026-11-19.json)
+- [Original-seed replay and fee attribution](../../reports/volatility-buffered-replay-2026-11-19.json)

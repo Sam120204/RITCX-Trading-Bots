@@ -1,5 +1,7 @@
 # Validation record — November 17, 2026
 
+The November 19 ETF replay and practice evaluation is recorded in the [ETF comparison](../reports/etf-strategy-comparison-2026-11-19.md). The checks below describe the earlier integration.
+
 > Historical report. Buffered is now the only supported volatility strategy; commands or alternatives described below refer to earlier revisions. Use the current README for runnable instructions.
 
 This record separates correctness checks, historical observations, and unverified strategy performance.

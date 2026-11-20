@@ -1,6 +1,8 @@
 """Complete trading workflows against local HTTP, never external accounts."""
 
 import json
+import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -17,7 +19,7 @@ from ritcx.volatility.model import black_scholes
 
 
 class CompetitionCLITests(unittest.TestCase):
-    def run_case(self, kind, trade=True, volatility_strategy=None):
+    def run_case(self, kind, trade=True, requested_case=None):
         posted, orders = [], []
         news_reads = 0
         if kind == "volatility":
@@ -71,12 +73,13 @@ class CompetitionCLITests(unittest.TestCase):
                         if kind == "volatility"
                         else (275 if len(posted) >= 3 else 20)
                     )
+                    settled = kind == "etf" and len(orders) == 3
                     return self.reply(
                         dict(
                             name=name,
                             period=1,
-                            tick=tick,
-                            status="ACTIVE",
+                            tick=0 if settled else tick,
+                            status="STOPPED" if settled else "ACTIVE",
                             ticks_per_period=300,
                             total_periods=1,
                         )
@@ -86,7 +89,7 @@ class CompetitionCLITests(unittest.TestCase):
                 if ep == "limits":
                     return self.reply(limits)
                 if ep == "trader":
-                    return self.reply(dict(nlv=0, total_fines=0))
+                    return self.reply(dict(nlv=500 - 10 * len(orders), total_fines=0))
                 if ep == "orders":
                     return self.reply([])
                 if ep == "news":
@@ -143,7 +146,13 @@ class CompetitionCLITests(unittest.TestCase):
         thread.start()
         try:
             with tempfile.TemporaryDirectory() as temp:
-                config = Path(temp) / "test.env"
+                # A fresh checkout keeps this test independent of real account profiles.
+                shutil.copytree(
+                    Path(__file__).resolve().parents[1] / "ritcx",
+                    Path(temp) / "ritcx",
+                    ignore=shutil.ignore_patterns("__pycache__"),
+                )
+                config = Path(temp) / ".env.contest"
                 config.write_text(
                     f"RIT_ENVIRONMENT=contest\nRIT_API_URL=http://127.0.0.1:{server.server_port}/v1\nRIT_USERNAME=cli-{kind}-test\nRIT_PASSWORD=local-secret\nRIT_LOG_DIR={temp}/logs\n"
                 )
@@ -151,30 +160,35 @@ class CompetitionCLITests(unittest.TestCase):
                     sys.executable,
                     "-m",
                     "ritcx",
-                    "--config",
-                    str(config),
+                    requested_case or kind,
                     "--contest",
-                    "--rounds",
-                    "1",
-                    "--max-seconds",
-                    "12",
+                    "--trade" if trade else "--preflight",
                 ]
-                command += ["--trade"] if trade else ["--preflight"]
-                if volatility_strategy:
-                    command += ["--volatility-strategy", volatility_strategy]
-                if kind == "etf":
-                    command += ["--no-baskets"]
                 result = subprocess.run(
                     command,
-                    cwd=Path(__file__).resolve().parents[1],
+                    cwd=temp,
+                    env={k: v for k, v in os.environ.items() if not k.startswith("RIT_")},
                     capture_output=True,
                     text=True,
                     timeout=20,
                 )
+            if requested_case and requested_case != kind:
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(name, result.stderr)
+                self.assertIn(requested_case, result.stderr)
+                self.assertNotIn("STARTING", result.stdout)
+                self.assertEqual(posted, [])
+                return
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             if trade:
                 self.assertIn("final_reconciliation", result.stdout)
                 self.assertIn('"completed": 1', result.stdout)
+                summary = next(
+                    json.loads(line) for line in result.stdout.splitlines() if '"HEAT_PNL"' in line
+                )
+                self.assertEqual(summary["pnl"], -10 * len(orders))
+                self.assertEqual(summary["average_pnl"], summary["pnl"])
+                self.assertEqual(summary["heats"], 1)
                 self.assertFalse(any(s["position"] for s in sec if s["ticker"] != "CAD"), sec)
             else:
                 self.assertEqual(posted, [])
@@ -202,12 +216,18 @@ class CompetitionCLITests(unittest.TestCase):
     def test_etf_accepts_qualified_tender_unwinds_and_converts_net_usd_cash(self):
         posted, orders = self.run_case("etf")
         self.assertEqual(posted[0], "/v1/tenders/3")
+        self.assertEqual([o["action"] for o in orders], ["BUY", "SELL", "SELL"])
         self.assertEqual(
-            [(o["ticker"], o["quantity"]) for o in orders], [("RITC", 10000), ("USD", 2800)]
+            [(o["ticker"], o["quantity"]) for o in orders],
+            [("USD", 247000), ("RITC", 10000), ("USD", 249800)],
         )
 
     def test_preflight_sends_no_mutations_even_with_profitable_tender(self):
         self.run_case("etf", trade=False)
+
+    def test_wrong_case_stops_before_launch_in_trade_and_preflight_modes(self):
+        self.run_case("volatility", requested_case="etf")
+        self.run_case("etf", trade=False, requested_case="volatility")
 
 
 if __name__ == "__main__":

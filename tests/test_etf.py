@@ -8,8 +8,12 @@ def level(price, quantity, filled=0):
 
 
 def securities():
+    mid = {"CAD": 1, "USD": 1, "BULL": 10, "BEAR": 15, "RITC": 25}
     return [
         dict(
+            bid=mid[t] - (0 if t in ("CAD", "USD") else 0.02),
+            ask=mid[t] + (0 if t in ("CAD", "USD") else 0.02),
+            limit_order_rebate=0.01,
             ticker=t,
             position=0,
             trading_fee=(0 if t in ("CAD", "USD") else 0.02),
@@ -39,8 +43,10 @@ class ETFTests(unittest.TestCase):
     def test_insufficient_liquidity_returns_no_value(self):
         self.assertIsNone(execution_value({"bids": [level(25, 100)], "asks": []}, "SELL", 101))
 
-    def test_buy_tender_must_be_profitable_through_whole_book(self):
-        tender = dict(
+    def test_gate_blends_nav_and_walks_one_exit_clip(self):
+        sec = securities()
+        sec[2].update(bid=10.18, ask=10.22)
+        t = dict(
             tender_id=1,
             ticker="RITC",
             quantity=100000,
@@ -49,38 +55,34 @@ class ETFTests(unittest.TestCase):
             is_fixed_bid=True,
             expires=80,
         )
-        book = {"bids": [level(25.2, 1000), level(24.9, 100000)], "asks": []}
-        self.assertIsNone(tender_opportunity(tender, book, securities(), 60))
+        book = {"bids": [level(24.98, 2500), level(24.96, 2500)], "asks": []}
+        result = tender_opportunity(t, book, sec, 60, horizon=20)
+        self.assertAlmostEqual(result["fair"], 25.10)
+        self.assertAlmostEqual(result["exit_cost_usd"], 0.045)
+        self.assertAlmostEqual(result["edge_usd"], 0.055)
+        self.assertEqual(result["verdict"], "take")
+        t["price"] = 25.03
+        self.assertEqual(tender_opportunity(t, book, sec, 60)["verdict"], "pass")
 
-    def test_fixed_buy_tender_profit_and_fx_are_correct(self):
-        tender = dict(
-            tender_id=1,
-            ticker="RITC",
-            quantity=100000,
-            action="BUY",
-            price=25,
-            is_fixed_bid=True,
-            expires=80,
-        )
-        book = {"bids": [level(25.3, 125000)], "asks": []}
-        result = tender_opportunity(tender, book, securities(), 60)
-        self.assertAlmostEqual(result["profit_usd"], 28000)
-        self.assertEqual(result["unwind_action"], "SELL")
-
-    def test_sell_tender_uses_ask_side(self):
-        tender = dict(
+    def test_sell_tender_walks_asks_and_credits_offset_inventory(self):
+        t = dict(
             tender_id=1,
             ticker="RITC",
             quantity=10000,
             action="SELL",
-            price=25,
+            price=25.09,
             is_fixed_bid=True,
             expires=80,
         )
-        book = {"bids": [level(24, 10000)], "asks": [level(24.5, 12500)]}
-        result = tender_opportunity(tender, book, securities(), 60)
-        self.assertAlmostEqual(result["profit_usd"], 4800)
-        self.assertEqual(result["unwind_action"], "BUY")
+        book = {"bids": [], "asks": [level(25.04, 10000)]}
+        sec = securities()
+        result = tender_opportunity(t, book, sec, 60)
+        self.assertAlmostEqual(result["exit_cost_usd"], 0.05)
+        self.assertEqual(result["verdict"], "take")
+        sec[-1]["position"] = 10000
+        offset = tender_opportunity(t, book, sec, 60)
+        self.assertAlmostEqual(offset["exit_cost_usd"], -0.05)
+        self.assertAlmostEqual(offset["edge_usd"], 0.14)
 
     def test_expired_tenders_and_auction_bids_are_not_accepted(self):
         tender = dict(

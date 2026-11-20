@@ -3,6 +3,7 @@
 import argparse
 import json
 import signal
+import statistics
 import subprocess
 import sys
 import threading
@@ -10,12 +11,12 @@ import time
 from contextlib import nullcontext
 from pathlib import Path
 
-from .api import client_from_config
+from .api import AuthenticationError, client_from_config
 from .runtime import ROOT, TradingError, account_lock, open_audit_log, read_config, validate_profile
 
-SCRIPTS = {
-    "RITCx Volatility Trading Case": "ritcx.volatility.bot",
-    "RITCx - Algorithmic ETF Arbitrage Case": "ritcx.etf.bot",
+CASES = {
+    "RITCx Volatility Trading Case": "volatility",
+    "RITCx - Algorithmic ETF Arbitrage Case": "etf",
 }
 
 
@@ -40,15 +41,26 @@ class RoundRouter:
         key = (self.epoch, case["name"], case["period"])
         if case["status"] != "ACTIVE" or case["tick"] >= 250 or key in self.claimed:
             return None
-        script = SCRIPTS.get(case["name"])
-        if script:
+        case_id = CASES.get(case["name"])
+        if case_id:
             self.claimed.add(key)
-        return script
+            return f"ritcx.{case_id}.bot"
+        return None
 
 
-def preflight(client, volatility_strategy="buffered"):
-    """GET-only checks; inactive/late heats can pass without being entry eligible."""
+def read_case(client, requested_case):
     case = client.get("case")
+    if requested_case and CASES.get(case["name"]) != requested_case:
+        raise TradingError(
+            f"Requested {requested_case}, but the server reports '{case['name']}'. "
+            "Check the assigned case URL."
+        )
+    return case
+
+
+def preflight(client, volatility_strategy="buffered", requested_case=None):
+    """GET-only checks; inactive/late heats can pass without being entry eligible."""
+    case = read_case(client, requested_case)
     securities = client.get("securities")
     limits = client.get("limits")
     trader = client.get("trader")
@@ -82,7 +94,7 @@ def preflight(client, volatility_strategy="buffered"):
     )
 
 
-def child_command(root, script, config, trade, mode, lock_fd):
+def child_command(script, config, trade, mode, lock_fd):
     command = [sys.executable, "-u", "-m", script, "--watch", "--config", str(config)]
     if trade:
         command += ["--trade", "--" + mode, "--lock-fd", str(lock_fd)]
@@ -91,7 +103,14 @@ def child_command(root, script, config, trade, mode, lock_fd):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--trade", action="store_true", help="Enable simulated orders")
+    parser.add_argument(
+        "case", nargs="?", choices=CASES.values(), help="Run only the named case (default: detect)"
+    )
+    execution_mode = parser.add_mutually_exclusive_group()
+    execution_mode.add_argument("--trade", action="store_true", help="Enable simulated orders")
+    execution_mode.add_argument(
+        "--dry-run", action="store_true", help="Observe without submitting orders"
+    )
     mode_flags = parser.add_mutually_exclusive_group()
     mode_flags.add_argument("--practice", action="store_true")
     mode_flags.add_argument(
@@ -99,7 +118,9 @@ def main():
         action="store_true",
         help="Use the formal simulator profile supplied by the organizers",
     )
-    parser.add_argument("--config", type=Path, default=ROOT / ".env")
+    parser.add_argument(
+        "--config", type=Path, help="Default: .env.contest for --contest, else .env"
+    )
     parser.add_argument(
         "--volatility-strategy",
         choices=("buffered",),
@@ -111,10 +132,9 @@ def main():
         action="store_true",
         help="Check connection, rules and account without sending orders, then exit",
     )
+    parser.add_argument("--hold-to-close", action="store_true", help="ETF expensive-exit fallback")
     parser.add_argument(
-        "--passive-tenders",
-        action="store_true",
-        help="Enable optional bounded passive tender exits",
+        "--loss-limit-cad", type=float, help="Optional ETF early liquidation trigger"
     )
     parser.add_argument("--no-baskets", action="store_true", help="ETF case: evaluate tenders only")
     parser.add_argument(
@@ -132,12 +152,12 @@ def main():
     if args.preflight and args.trade:
         parser.error("--preflight is read-only; omit --trade")
     root = ROOT
-    config = args.config.resolve()
+    config = (args.config or root / (".env.contest" if args.contest else ".env")).resolve()
     cfg = read_config(config)
     validate_profile(cfg, args.practice, args.contest, args.trade)
     client = client_from_config(cfg)
     if args.preflight:
-        result = preflight(client, args.volatility_strategy)
+        result = preflight(client, args.volatility_strategy, args.case)
         print("PREFLIGHT PASSED (read-only): " + json.dumps(result), flush=True)
         print(
             "Ready for this active heat."
@@ -170,8 +190,11 @@ def main():
                 stream.write(row + "\n")
                 stream.flush()
 
-        def relay(process, heat_case):
+        def relay(process, heat_case, starting_nlv):
+            nonlocal heat_pnl
             last_status = 0
+            last_tick = heat_case["tick"]
+            reset = False
             for line in process.stdout:
                 with output_lock:
                     stream.write(line)
@@ -183,9 +206,23 @@ def main():
                     continue
                 event = row.get("event")
                 if event == "snapshot":
+                    last_tick = row["tick"]
                     router.observe(dict(heat_case, tick=row["tick"]))
+                elif event == "round_reset":
+                    reset = True
                 elif event == "final_reconciliation" and row.get("case"):
-                    router.observe(row["case"])
+                    final_case = row["case"]
+                    router.observe(final_case)
+                    if (
+                        args.trade
+                        and not reset
+                        and final_case["name"] == heat_case["name"]
+                        and final_case["period"] == heat_case["period"]
+                        and (final_case["status"] != "ACTIVE" or final_case["tick"] >= last_tick)
+                        and not row["positions"]
+                        and not row["open_orders"]
+                    ):
+                        heat_pnl = row["trader"]["nlv"] - starting_nlv
                 if event == "snapshot" and time.monotonic() - last_status >= 5:
                     last_status = time.monotonic()
                     state = (
@@ -194,11 +231,14 @@ def main():
                         else ("TRADING" if args.trade else "READ-ONLY")
                     )
                     print(
-                        f"{state} tick={row['tick']}/300 nlv={row['trader'].get('nlv')} fines={row['trader'].get('total_fines')} positions={row.get('positions', {})}",
+                        f"{state} tick={row['tick']}/300 nlv={row['trader']['nlv']} "
+                        f"pnl={row['trader']['nlv'] - starting_nlv:+,.2f} "
+                        f"fines={row['trader'].get('total_fines')} positions={row.get('positions', {})}",
                         flush=True,
                     )
                 elif event in (
                     "order_response",
+                    "heat_summary",
                     "tender_signal",
                     "tender_response",
                     "finished_flat",
@@ -214,7 +254,9 @@ def main():
 
         started = time.monotonic()
         previous_state = None
+        case_pnls = {}
         last_wait = 0
+        auth_wait_started = None
         report(
             "ARMED" if args.trade else "READ_ONLY",
             rounds=args.rounds,
@@ -223,12 +265,26 @@ def main():
             log=str(path),
         )
         while not stopped and time.monotonic() - started < args.max_seconds:
-            case = client.get("case")
+            try:
+                case = read_case(client, args.case)
+            except AuthenticationError:
+                # The practice server can briefly reject even a GET during a reset.
+                # Retry only this idle poll after an authenticated connection.
+                if previous_state is None:
+                    raise
+                if auth_wait_started is None:
+                    auth_wait_started = time.monotonic()
+                    report("WAITING", reason="server temporarily rejected the case status check")
+                if time.monotonic() - auth_wait_started >= 30:
+                    raise
+                time.sleep(1)
+                continue
+            auth_wait_started = None
             state = (case["name"], case["status"])
             if state != previous_state or time.monotonic() - last_wait >= 15:
                 reason = (
                     "unknown case"
-                    if case["name"] not in SCRIPTS
+                    if case["name"] not in CASES
                     else "inactive heat"
                     if case["status"] != "ACTIVE"
                     else "heat past entry cutoff"
@@ -241,10 +297,10 @@ def main():
             script = router.claim(case)
             if script:
                 # Validate account and contract parameters before launching every heat.
-                preflight(client, args.volatility_strategy)
+                ready = preflight(client, args.volatility_strategy, CASES[case["name"]])
+                heat_pnl = None
                 report("STARTING", script=script, tick=case["tick"])
                 command = child_command(
-                    root,
                     script,
                     config,
                     args.trade,
@@ -254,8 +310,10 @@ def main():
                 if script == "ritcx.volatility.bot":
                     command.extend(["--strategy", args.volatility_strategy])
                 if script == "ritcx.etf.bot":
-                    if args.passive_tenders:
-                        command.append("--passive-tenders")
+                    if args.hold_to_close:
+                        command.append("--hold-to-close")
+                    if args.loss_limit_cad is not None:
+                        command.extend(["--loss-limit-cad", str(args.loss_limit_cad)])
                     if args.no_baskets:
                         command.append("--no-baskets")
                 child = subprocess.Popen(
@@ -267,7 +325,9 @@ def main():
                     bufsize=1,
                     pass_fds=(lock_fd,) if lock_fd is not None else (),
                 )
-                reader = threading.Thread(target=relay, args=(child, case), daemon=True)
+                reader = threading.Thread(
+                    target=relay, args=(child, case, ready["trader"]["nlv"]), daemon=True
+                )
                 reader.start()
                 close_requested = False
                 while child.poll() is None:
@@ -292,6 +352,16 @@ def main():
                         message="Inspect reconciliation and the account before restarting; orders will not be retried",
                     )
                     return code
+                if heat_pnl is not None and not close_requested and not stopped:
+                    pnls = case_pnls.setdefault(case["name"], [])
+                    pnls.append(heat_pnl)
+                    report(
+                        "HEAT_PNL",
+                        case=CASES[case["name"]],
+                        heats=len(pnls),
+                        pnl=round(heat_pnl, 2),
+                        average_pnl=round(statistics.mean(pnls), 2),
+                    )
                 completed += 1
                 if completed >= args.rounds:
                     break

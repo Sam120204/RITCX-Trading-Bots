@@ -2,6 +2,8 @@
 
 The live entry point is `python3 -m ritcx`. Models are pure functions; bots choose actions; shared execution reconciles orders against server inventory. No model calls a converter. The algorithms target mechanisms described by the supplied cases, not price-history indicators.
 
+[![Volatility and ETF decisions from heat selection through reconciliation](assets/trading-algorithm.png)](assets/trading-algorithm.svg)
+
 ## Volatility valuation
 
 For each option, `T = max(300 − tick, 0) / 3600` years. This matches the official Python support script: 20 simulated trading days per 300 seconds, 240 trading days per year. Use the interest rate announced by the server, with European non-dividend Black–Scholes pricing and 100 shares per contract.
@@ -44,41 +46,25 @@ It subtracts round-trip commissions for both options and 100 RTM shares and requ
 
 ## ETF tender model
 
-The model accepts fixed-price RITC offers only. The action is from the trader’s perspective: BUY adds a long ETF position; SELL adds a short position. Tender acceptance itself is modeled without a trading commission; subsequent market liquidation is charged the equity fee.
-
-1. Require a positive integral size no larger than 100,000 units and at least two ticks before offer expiry; no new tenders at/after tick 250.
-2. Project the full accepted quantity and its USD cash payment/receipt. Check cash and equity capacity before acceptance.
-3. Sort the unwind side of the book, subtract each order’s filled quantity, remove own orders, and use only 80% of the remaining displayed volume. Require enough depth for the entire tender.
-4. Compute full-book net USD profit after the liquidation fee. Require at least `max(500, 0.08 × quantity)` USD. The depth haircut and profit margin are buffers, not a guarantee that quotes persist.
-5. Check the projected post-liquidation cash state, and full FX depth for converting estimated positive net USD proceeds into CAD. Cash and ETF value can offset during execution; the actual FX hedge uses their combined exposure.
-6. Reserve `ceil(quantity/10000) × (slice_seconds + passive_wait) + 8` seconds before tick 275. `slice_seconds` is at least 1.5 seconds and increases to four times the slowest recent POST latency if that is larger. Passive mode adds 0.75 seconds per slice. This is a conservative scheduling estimate, not a hard upper bound on network time.
-7. Re-read the case, books and inventory immediately before acceptance and rerun the test.
-
-After acceptance, verify the position change. Direct liquidation refreshes book depth for every ticket of up to 10,000 shares and reconciles every fill. It stops with explicit unresolved inventory if visible liquidity disappears or a response is uncertain. It does not make an untested assumption that a basket hedge or manual conversion will complete the exit.
-
-Optional passive execution quotes on the inventory-reducing side, waits at most 0.75 seconds, cancels the remainder, and reads the final order state. This handles a fill that arrives during cancellation. An incomplete passive attempt disables further resting attempts for that unwind; a short remaining time budget uses market execution immediately. No passive rebate is needed in the acceptance calculation. There is no post-only promise or full optimal-execution optimizer.
-
-## ETF basket model
-
-The economic relationship is one BULL share and one BEAR share per RITC ETF share:
+A fixed-price BUY tender adds RITC inventory. A SELL tender reduces it. Each offer must have a valid price, a whole-share quantity up to 100,000 and at least two ticks remaining. Re-read the book, tick and positions before accepting. Include the tender price in the POST and confirm the signed change in the ETF position.
 
 ```text
-RITC_USD × CAD_per_USD = BULL_CAD + BEAR_CAD
+NAV = (BULL mid + BEAR mid) / USD mid
+fair = (RITC mid + NAV) / 2
+edge per share = sign × (fair − tender price) − signed exit cost
 ```
 
-A cheap ETF suggests buy RITC / sell BULL / sell BEAR. A rich ETF suggests the reverse. Pricing walks each equity book for the entire 500-unit proposed quantity. It also walks the appropriate FX book for the ETF’s **full USD notional**, not one dollar at the best quote. Fees are converted to CAD and a round-trip commission allowance is deducted before the 0.15 CAD/unit entry threshold.
+The modeled exit clip is the larger of newly added inventory and 60,000 divided by the glide horizon, up to the ticket cap. Walk that clip against remaining external depth. An incomplete book uses half the spread plus 0.03 and the market fee. Blend the aggressive cost equally with the passive estimate, then add 0.02 for drift. The passive estimate is the positive part of half the spread less one cent, less the reported rebate. Inventory already offset by a tender earns the corresponding cost credit. Ordinary offers require 0.03 USD/share after costs. From tick 285, offers that create new inventory need 0.10 USD/share for settlement. New offers stop at 297.
 
-Before sending any leg, test all seven nonempty subsets of the basket for intermediate equity and cash capacity. Every subsequent leg is checked again against reconciled inventory. Published weights count RITC twice and each constituent once. Live reported weights are checked separately: taking the larger individual weight alone does not guarantee a stricter *net* exposure when long and short legs offset.
+Tender inventory equals RITC plus BULL when the two stock legs are equal. After acceptance, start or extend a declining inventory allowance. At neutral NAV the selected horizon is 30 ticks. The rate multiplier is `1 − sign(inventory) × (NAV − mid) / 0.10`, clipped to 0.25–2.5. A profitable tender blocked by risk temporarily accelerates the glide. A market clip reduces any deficit of at least 500 shares, capped by actual excess, the ticket limit and one per tick. A separate limit order rests until the next decision. Cancel its known remainder and reconcile its final fill and position before trading again. Ordinary market clips stop in the last eight ticks. Exchange settlement handles residuals.
 
-A basket position must satisfy `BULL = BEAR = −RITC`. The maximum open basket size is 5,000 units. The exit trigger uses the midpoint CAD basis approaching within 0.03 of convergence, so actual exit spread/impact can reduce the captured profit. Hard close-out begins at 275 regardless of convergence. Without manual conversion, these are relative-value positions with basis risk.
+The optional `--hold-to-close` cost contingency accepts at a 0.08 USD/share bar and carries the resulting inventory to settlement. `--loss-limit-cad` enables operator-selected early liquidation. The normal glide carries mark-to-market risk through reversals. See the paired replay, downside and practice observations in the [ETF evaluation](../reports/etf-strategy-comparison-2026-11-19.md).
 
-FX exposure is:
+## ETF basket and FX execution
 
-```text
-USD_cash + RITC_quantity × RITC_USD_midpoint
-```
+While no tender or excess RITC needs attention, size a basket to the remaining external touch on each equity, at most 5,000 shares. Price the full ETF notional through the appropriate FX book and require 0.06 CAD/unit after three market fees. Given the 250,000 internal gross cap, reserving the published 200,000 weighted units for the largest tender leaves capacity for 12,500 four-unit pairs. Check all seven intermediate fill subsets, cash and both the published and server-reported weights. Refresh positions after each leg. A confirmed partial fill aborts the remaining legs and initiates a reconciled liquidation.
 
-The normal hedge trigger is $1,000 of USD exposure; close-out hedges to less than one USD unit of rounding residual. Currency orders are capped at 2,500,000 units and projected cash is checked. A fully filled basket does not necessarily need an FX trade: the RITC cash payment and marked ETF value may already offset.
+RITC settles in USD and basket constituents settle in CAD. The bot hedges USD cash at a 20,000-unit band with at most one normal FX clip per tick. On a stop request it flattens the equities and hedges residual currency to within one unit. Natural expiry requires a read-back of final positions, open orders and NLV.
 
 ## Execution and lifecycle
 

@@ -116,9 +116,7 @@ class SessionTests(unittest.TestCase):
         self.assertFalse(preflight(Client())["entry_eligible"])
 
     def test_child_receives_same_connection_profile_and_lock(self):
-        cmd = child_command(
-            Path("/project"), "ritcx.etf.bot", Path("/private/contest.env"), True, "contest", 17
-        )
+        cmd = child_command("ritcx.etf.bot", Path("/private/contest.env"), True, "contest", 17)
         self.assertIn("--contest", cmd)
         self.assertNotIn("--practice", cmd)
         self.assertEqual(cmd[cmd.index("--config") + 1], "/private/contest.env")

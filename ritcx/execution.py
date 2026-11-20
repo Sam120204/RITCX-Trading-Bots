@@ -17,7 +17,7 @@ class PartialFill(TradingError):
         )
 
 
-def execute_order(client, sec, quantity, action, *, price=None, passive_seconds=0):
+def submit_order(client, sec, quantity, action, *, price=None):
     payload = dict(
         ticker=sec["ticker"],
         type="LIMIT" if price is not None else "MARKET",
@@ -28,7 +28,6 @@ def execute_order(client, sec, quantity, action, *, price=None, passive_seconds=
         if not math.isfinite(price) or price <= 0:
             raise TradingError("Invalid limit price")
         payload["price"] = price
-    before = sec["position"]
     client.audit("order_attempt", **payload)
     start = time.monotonic()
     receipt = client.request("POST", "orders", payload)
@@ -46,15 +45,22 @@ def execute_order(client, sec, quantity, action, *, price=None, passive_seconds=
         raise TradingError(
             "Uncertain order receipt; reconcile account before any further submission"
         )
+    return receipt
+
+
+def reconcile_order(client, sec, quantity, action, receipt):
+    before = sec["position"]
+    order_id = receipt["order_id"]
     # A fully filled receipt also must carry a terminal status.
     if receipt.get("status") not in ("TRANSACTED", "CANCELLED", "REJECTED"):
-        deadline = time.monotonic() + passive_seconds
-        while time.monotonic() < deadline and receipt.get("status") == "OPEN":
-            time.sleep(min(0.1, max(0, deadline - time.monotonic())))
-            receipt = client.get(f"orders/{order_id}")
-        if receipt.get("status") not in ("TRANSACTED", "CANCELLED", "REJECTED"):
-            # Cancelling a known remainder is distinct from retrying an uncertain order.
+        # A limit may have fully filled while its cancellation was in flight.
+        try:
             client.request("DELETE", f"orders/{order_id}")
+        except TradingError:
+            receipt = client.get(f"orders/{order_id}")
+            if receipt.get("status") not in ("TRANSACTED", "CANCELLED", "REJECTED"):
+                raise
+        else:
             receipt = client.get(f"orders/{order_id}")
         if receipt.get("status") not in ("TRANSACTED", "CANCELLED", "REJECTED"):
             raise TradingError("Order cancellation not confirmed; no replacement submitted")
@@ -67,14 +73,17 @@ def execute_order(client, sec, quantity, action, *, price=None, passive_seconds=
     ):
         raise TradingError("Invalid final fill quantity")
     expected = before + (filled if action == "BUY" else -filled)
-    for _ in range(3):
+    tolerance = 1e-6 if sec.get("type") == "CURRENCY" else 0.0
+    for _ in range(6):
         latest = client.get("securities")
         actual = next(s["position"] for s in latest if s["ticker"] == sec["ticker"])
-        if actual == expected:
+        if math.isclose(actual, expected, abs_tol=tolerance, rel_tol=0):
             break
         time.sleep(0.1)
     else:
-        raise TradingError("Fill could not be reconciled; no replacement submitted")
+        raise TradingError(
+            f"Fill could not be reconciled for {sec['ticker']}: expected {expected}, observed {actual}"
+        )
     if client.get("orders?status=OPEN"):
         raise TradingError("Open orders remain after reconciliation; entries blocked")
     client.last_securities = latest
@@ -87,6 +96,12 @@ def execute_order(client, sec, quantity, action, *, price=None, passive_seconds=
         order_id=order_id,
     )
     return dict(receipt, quantity=quantity), latest
+
+
+def execute_order(client, sec, quantity, action):
+    sec = dict(sec)  # Capture the pre-submission position, including for in-process transports.
+    receipt = submit_order(client, sec, quantity, action)
+    return reconcile_order(client, sec, quantity, action, receipt)
 
 
 def submit_change(client, securities, ticker, change):

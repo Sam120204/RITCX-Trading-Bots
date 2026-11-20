@@ -13,6 +13,10 @@ from urllib.request import Request, urlopen
 from .runtime import TradingError
 
 
+class AuthenticationError(TradingError):
+    """The simulator returned HTTP 401."""
+
+
 class DMAClient:
     """RIT DMA by default; an explicit api_key selects client REST authentication."""
 
@@ -121,7 +125,8 @@ class DMAClient:
                 self.audit(
                     "request_rejected", method=method, endpoint=endpoint, http_status=exc.code
                 )
-                raise TradingError(
+                error = AuthenticationError if exc.code == 401 else TradingError
+                raise error(
                     f"{method} {endpoint}: HTTP {exc.code}; submission not retried"
                 ) from None
             except (URLError, TimeoutError, OSError, ValueError):

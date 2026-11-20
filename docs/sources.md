@@ -6,7 +6,7 @@ Reviewed November 17, 2026 against the linked event page and fresh downloads of 
 
 The [event page](https://www.rotman.utoronto.ca/faculty-and-research/education-labs/bmo-financial-group-finance-research-and-trading-lab/finance-research-and-trading-lab/events/ritcxuoft/) says both cases use randomized paths between iterations and each contributes 50% of the score through heat/case ranks. Only one team member participates in the ETF case. The event recommends client REST for Windows stability and supplies DMA examples for browser/Mac participants.
 
-Website client/browser login ports are not automatically DMA API ports. The existing local mock profile used `flserver.rotman.utoronto.ca:16520/v1`; the archived scripts contain other sample DMA ports. None establishes the user’s formal assignment. Use organizer-provided endpoint/authentication information and pass preflight each time the profile changes.
+Website client/browser login ports are not automatically DMA API ports. The existing local mock profile used `flserver.rotman.utoronto.ca:16520/v1`; the archived scripts contain other sample DMA ports. On November 19 the event page’s ETF Mac/browser port also served the authenticated practice DMA API at `http://flserver.rotman.utoronto.ca:16500/v1`. The configured 16520 endpoint then served Volatility. Neither endpoint establishes the formal competition assignment. Use organizer-provided endpoint/authentication information and pass preflight each time the profile changes.
 
 ## Volatility case
 
